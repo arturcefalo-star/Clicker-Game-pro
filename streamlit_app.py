@@ -50,7 +50,7 @@ def adicionar_ponto():
 
 #COLUNA 
 melhorias_clique = [
-    {"qtd": 1, "custo": 100},
+    {"qtd": 1, "custo": 1},
     {"qtd": 5, "custo": 500},
     {"qtd": 10, "custo": 1000},
     {"qtd": 50, "custo": 5000},
@@ -124,7 +124,13 @@ with col1:
             time.sleep(0.1) 
             if st.session_state.pontos >= item['custo']:
                 st.session_state.pontos -= item['custo']
+
                 st.session_state.poder_clique += item['qtd']
+
+                st.session_state.poder_base += 1             
+                bonus_pet_atual = 0
+                if "foto_sorteada" in st.session_state and st.session_state.foto_sorteada:
+                    bonus_pet_atual = st.session_state.foto_sorteada.get("bonus")
                 st.rerun()
             else:
                 st.warning("Pontos insuficiente")
