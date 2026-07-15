@@ -82,9 +82,9 @@ st.write(f"Poder de clique: {st.session_state.poder_clique}")
 st.write(f"Pontos por segundo: {st.session_state.pontos_por_segundo}")
 
 with col3:
-    if st.button("Abrir Ovo = 1 Pontos"):
-        if st.session_state.pontos >= 1:
-            st.session_state.pontos -= 1
+    if st.button("Abrir Ovo = 100 Pontos"):
+        if st.session_state.pontos >= 100:
+            st.session_state.pontos -= 100
 
             sorteado = random.choices(
                [{"nome": "Siruriru", "arquivo": "logo3.png", "bonus": 1, "chance": "50%"}, 
