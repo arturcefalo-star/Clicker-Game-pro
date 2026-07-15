@@ -48,7 +48,7 @@ def adicionar_ponto():
 
 #COLUNA 
 melhorias_clique = [
-    {"qtd": 1, "custo": 1},
+    {"qtd": 1, "custo": 100},
     {"qtd": 5, "custo": 500},
     {"qtd": 10, "custo": 1000},
     {"qtd": 50, "custo": 5000},
@@ -62,12 +62,12 @@ melhorias_clique = [
 
 #COLUNA 2
 melhorias_passivas = [
-    {"qtd": 1, "custo": 2},
-    {"qtd": 5, "custo": 1000},
-    {"qtd": 10, "custo": 4000},
-    {"qtd": 50, "custo": 20000},
-    {"qtd": 100, "custo": 100000},
-    {"qtd": 500, "custo": 200000},
+    {"qtd": 5, "custo": 200},
+    {"qtd": 10, "custo": 600},
+    {"qtd": 20, "custo": 1100},
+    {"qtd": 100, "custo": 7500},
+    {"qtd": 200, "custo": 14500},
+    {"qtd": 1000, "custo": 72500},
 ]
 
 st.title("Clicker Game (Beta)")
