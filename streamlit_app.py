@@ -13,8 +13,14 @@ if "sorteado" not in st.session_state:
     st.session_state.sorteado = True
 if "poder_base" not in st.session_state:
     st.session_state.poder_base = 1
+if "slot_1" not in st.session_state:
+    st.session_state.slot_1 = None
+if "slot_2" not in st.session_state:
+    st.session_state.slot_2 = None
+if "ovo1_bloqueado" not in st.session_state:
+    st.session_state.ovo1_bloqueado = False
 
-col3, col4, col5, col6 = st.columns(4)
+col3, col4 = st.columns(2)
 
 if "pontos" not in st.session_state:
     st.session_state.pontos = 0
@@ -84,30 +90,66 @@ st.write(f"Poder de clique: {st.session_state.poder_clique}")
 st.write(f"Pontos por segundo: {st.session_state.pontos_por_segundo}")
 
 with col3:
-    if st.button("Abrir Ovo = 100 Pontos"):
-        if st.session_state.pontos >= 100:
-            st.session_state.pontos -= 100
+    st.write("Pocentagens:")
+    st.write("Siruriru: 50%")
+    st.write("Peppa Pig: 35%")
+    st.write("Manoel G: 15%")
+    if st.button("Abrir Ovo = 100 Pontos", disabled=st.session_state.ovo1_bloqueado, key="botao_ovo1_btn_slot1"):
+        if st.session_state.pontos >= 1:
+            st.session_state.pontos -= 1
 
-            sorteado = random.choices(
+            sorteado_ovo1 = random.choices(
                [{"nome": "Siruriru", "arquivo": "logo3.png", "bonus": 1, "chance": "50%"}, 
                 {"nome": "Peppa Pig", "arquivo": "logo2.png", "bonus": 5, "chance": "35%"},
                 {"nome": "Manoel G", "arquivo": "logo1.png", "bonus": 10, "chance": "15%"}],
                weights = [50, 35, 15], k=1
             )[0]
-            st.session_state.foto_sorteada = sorteado
+            st.session_state.foto_sorteada_1 = sorteado_ovo1
 
-            st.session_state.poder_clique = st.session_state.poder_base + sorteado["bonus"]
+            st.session_state.ovo1 = sorteado_ovo1
+
+            st.session_state.poder_clique = st.session_state.poder_base + sorteado_ovo1["bonus"]
         else:
             st.warning("Pontos insuficiente")
 
-    if "foto_sorteada" in st.session_state and st.session_state.foto_sorteada:
-        ganhou = st.session_state.foto_sorteada
+    if "foto_sorteada_1" in st.session_state and st.session_state.foto_sorteada_1:
+        ganhou = st.session_state.foto_sorteada_1
 
         if "arquivo" in ganhou:
             st.write(f"Seus Pets:")
             st.image(ganhou["arquivo"], width=100)
             st.write(f"{ganhou.get('chance')} - {ganhou['nome']} + {ganhou.get('bonus')} Ponto(s)")
 
+with col4:
+    st.write("Pocentagens:")
+    st.write("Dora A.: 50%")
+    st.write("Sonic: 35%")
+    st.write("Michel J.: 15%")
+    if st.button("Abrir Ovo = 1000 Pontos", key="botao_ovo2_btn_slot2"):
+        if st.session_state.pontos >= 1:
+            st.session_state.pontos -= 1
+            st.session_state.ovo1_bloqueado = True
+
+            sorteado2 = random.choices(
+               [{"nome": "Dora A.", "arquivo": "logo4.png", "bonus": 10, "chance": "50%"}, 
+                {"nome": "Sonic", "arquivo": "logo5.png", "bonus": 50, "chance": "35%"},
+                {"nome": "Michel J.", "arquivo": "logo6.png", "bonus": 100, "chance": "15%"}],
+               weights = [50, 35, 15], k=1
+            )[0]
+            st.session_state.foto_sorteada_2 = sorteado2
+
+            st.session_state.poder_clique = st.session_state.poder_base + sorteado2["bonus"]
+        else:
+            st.warning("Pontos insuficiente")
+
+    if "foto_sorteada_2" in st.session_state and st.session_state.foto_sorteada_2:
+        ganhou = st.session_state.foto_sorteada_2
+
+        if "arquivo" in ganhou:
+            st.write(f"Seus Pets:")
+            st.image(ganhou["arquivo"], width=100)
+            st.write(f"{ganhou.get('chance')} - {ganhou['nome']} + {ganhou.get('bonus')} Ponto(s)")
+        st.rerun()
 st.markdown("---")
 
 col1, col2 = st.columns(2)
@@ -150,3 +192,10 @@ with col2:
                 st.rerun()
             else:
                 st.warning("Pontos insuficiente")
+
+st.subheader("Atualizações:")
+st.write("(1.0.0(Beta) - Lançamento!!!")
+st.write("(1.0.1) - Correção de bugs")
+st.write("(1.1.2) - Adição dos Ovos, correção de bugs e preços balanceados")
+st.write("(1.2.3) - Adição de novos pets e ovos e o log de atualizações")
+
