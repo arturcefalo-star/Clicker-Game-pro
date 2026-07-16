@@ -95,8 +95,8 @@ with col3:
     st.write("Peppa Pig: 35%")
     st.write("Manoel G: 15%")
     if st.button("Abrir Ovo = 100 Pontos", disabled=st.session_state.ovo1_bloqueado, key="botao_ovo1_btn_slot1"):
-        if st.session_state.pontos >= 100:
-            st.session_state.pontos -= 100
+        if st.session_state.pontos >= 1:
+            st.session_state.pontos -= 1
 
             sorteado_ovo1 = random.choices(
                [{"nome": "Siruriru", "arquivo": "logo3.png", "bonus": 1, "chance": "50%"}, 
@@ -117,7 +117,7 @@ with col3:
 
         if "arquivo" in ganhou:
             st.write(f"Seus Pets:")
-            st.image(ganhou["arquivo"], width=100)
+            st.image(ganhou["arquivo"], width=188)
             st.write(f"{ganhou.get('chance')} - {ganhou['nome']} + {ganhou.get('bonus')} Ponto(s)")
 
 with col4:
@@ -126,8 +126,8 @@ with col4:
     st.write("Sonic: 35%")
     st.write("Michael J.: 15%")
     if st.button("Abrir Ovo = 1000 Pontos", key="botao_ovo2_btn_slot2"):
-        if st.session_state.pontos >= 1000:
-            st.session_state.pontos -= 1000
+        if st.session_state.pontos >= 1:
+            st.session_state.pontos -= 1
             st.session_state.ovo1_bloqueado = True
 
             sorteado2 = random.choices(
@@ -198,4 +198,3 @@ st.write("(1.0.0(Beta) - Lançamento!!!")
 st.write("(1.0.1) - Correção de bugs")
 st.write("(1.1.2) - Adição dos Ovos, correção de bugs e preços balanceados")
 st.write("(1.2.3) - Adição de novos pets e ovos e o log de atualizações")
-
