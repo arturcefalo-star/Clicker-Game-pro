@@ -73,7 +73,7 @@ with col3:
     st.write("Peppa Pig: 35% (+5 Pontos)")
     st.write("Manoel G: 15% (+10 Pontos)")
     
-    custo_ovo1 = 100
+    custo_ovo1 = 1
     desativar_ovo1 = st.session_state.ovo1_bloqueado or st.session_state.pontos < custo_ovo1
     
     if st.button(f"Abrir Ovo = {custo_ovo1} Pontos", disabled=desativar_ovo1, key="botao_ovo1"):
@@ -100,7 +100,7 @@ with col4:
     st.write("Sonic: 35% (+50 Pontos)")
     st.write("Michael J.: 15% (+100 Pontos)")
     
-    custo_ovo2 = 1000
+    custo_ovo2 = 1
     desativar_ovo2 = st.session_state.pontos < custo_ovo2
     
     if st.button(f"Abrir Ovo = {custo_ovo2} Pontos", disabled=desativar_ovo2, key="botao_ovo2"):
