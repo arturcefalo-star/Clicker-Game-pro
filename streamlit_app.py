@@ -95,8 +95,8 @@ with col3:
     st.write("Peppa Pig: 35%")
     st.write("Manoel G: 15%")
     if st.button("Abrir Ovo = 100 Pontos", disabled=st.session_state.ovo1_bloqueado, key="botao_ovo1_btn_slot1"):
-        if st.session_state.pontos >= 1:
-            st.session_state.pontos -= 1
+        if st.session_state.pontos >= 100:
+            st.session_state.pontos -= 100
 
             sorteado_ovo1 = random.choices(
                [{"nome": "Siruriru", "arquivo": "logo3.png", "bonus": 1, "chance": "50%"}, 
@@ -124,16 +124,16 @@ with col4:
     st.write("Pocentagens:")
     st.write("Dora A.: 50%")
     st.write("Sonic: 35%")
-    st.write("Michel J.: 15%")
+    st.write("Michael J.: 15%")
     if st.button("Abrir Ovo = 1000 Pontos", key="botao_ovo2_btn_slot2"):
-        if st.session_state.pontos >= 1:
-            st.session_state.pontos -= 1
+        if st.session_state.pontos >= 1000:
+            st.session_state.pontos -= 1000
             st.session_state.ovo1_bloqueado = True
 
             sorteado2 = random.choices(
                [{"nome": "Dora A.", "arquivo": "logo4.png", "bonus": 10, "chance": "50%"}, 
                 {"nome": "Sonic", "arquivo": "logo5.png", "bonus": 50, "chance": "35%"},
-                {"nome": "Michel J.", "arquivo": "logo6.png", "bonus": 100, "chance": "15%"}],
+                {"nome": "Michael J.", "arquivo": "logo6.png", "bonus": 100, "chance": "15%"}],
                weights = [50, 35, 15], k=1
             )[0]
             st.session_state.foto_sorteada_2 = sorteado2
