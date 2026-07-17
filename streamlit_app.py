@@ -68,6 +68,8 @@ def salvar_progresso_atual():
             "mundo_atual": st.session_state.mundo_atual
         }
         salvar_todos_usuarios(usuarios)
+        # Sincroniza automaticamente com o Top Global ao salvar
+        atualizar_no_leaderboard(st.session_state.nome_usuario, st.session_state.pontos)
 
 def carregar_leaderboard():
     if os.path.exists(LEADERBOARD_FILE):
@@ -105,14 +107,13 @@ def atualizar_no_leaderboard(nome, pontos):
     for j in leaderboard:
         if j["Jogador"].lower() == nome.lower():
             encontrado = True
-            if pontos > j["Pontos"]:
-                j["Pontos"] = pontos
-                j["Jogador"] = nome
+            j["Pontos"] = pontos  # Atualiza em tempo real, mesmo se for menor (caso gaste pontos)
+            j["Jogador"] = nome
             break
     if not encontrado:
         leaderboard.append({"Jogador": nome, "Pontos": pontos})
     
-    leaderboard = sorted(leaderboard, key=lambda x: x["Pontos"], reverse=True)[:5]
+    leaderboard = sorted(leaderboard, key=lambda x: x["Pontos"], reverse=True)
     salvar_leaderboard_completo(leaderboard)
 
 def remover_jogador_leaderboard(nome):
@@ -228,6 +229,20 @@ def atualizar_poder_clique():
 
 atualizar_poder_clique()
 
+# --- REFRESH PASSIVO (AUTO-CLICKER / LOOP PRINCIPAL) ---
+# Executa a cada 900ms para capturar o tempo e renderizar o Top Global atualizado
+st_autorefresh(interval=900, key="global_loop")
+
+agora = time.time()
+tempo_passado = agora - st.session_state.ultimo_tick
+
+if tempo_passado >= 1.0:
+    ciclos = int(tempo_passado)
+    st.session_state.pontos += st.session_state.pontos_por_segundo * ciclos
+    st.session_state.ultimo_tick = agora - (tempo_passado - ciclos)
+    # [AUTOSAVE ATIVADO] Salva e sincroniza o placar a cada segundo ganho passivamente
+    salvar_progresso_atual()
+
 # --- SINCRONIZAÇÃO DO ADMIN (ATUALIZAÇÃO DE PONTOS EM TEMPO REAL) ---
 if st.session_state.nome_usuario != "" and os.path.exists(LEADERBOARD_FILE):
     try:
@@ -235,7 +250,7 @@ if st.session_state.nome_usuario != "" and os.path.exists(LEADERBOARD_FILE):
             tabela_global = json.load(f)
         for j in tabela_global:
             if j["Jogador"].lower() == st.session_state.nome_usuario.lower():
-                pontos_lb = j["Pontos"]
+                pontos_lb = j["Points" if "Points" in j else "Pontos"]
                 
                 if st.session_state.pontos_leaderboard_cache == -1:
                     st.session_state.pontos_leaderboard_cache = pontos_lb
@@ -251,19 +266,6 @@ if st.session_state.nome_usuario != "" and os.path.exists(LEADERBOARD_FILE):
                 break
     except Exception:
         pass
-
-# --- REFRESH PASSIVO (AUTO-CLICKER) ---
-if st.session_state.pontos_por_segundo > 0:
-    st_autorefresh(interval=900, key="autoclicker")
-
-agora = time.time()
-tempo_passado = agora - st.session_state.ultimo_tick
-
-if tempo_passado >= 1.0:
-    ciclos = int(tempo_passado)
-    st.session_state.pontos += st.session_state.pontos_por_segundo * ciclos
-    st.session_state.ultimo_tick = agora - (tempo_passado - ciclos)
-    salvar_progresso_atual()
 
 loja_em_cooldown = (time.time() - st.session_state.ultima_compra) < 0.5
 
@@ -363,7 +365,9 @@ if st.session_state.mundo_atual == 2:
         pass
 
     if st.button("            Click Here          "):
+        st.session_state.points_before = st.session_state.pontos
         st.session_state.pontos += (st.session_state.poder_clique * 2)
+        # [AUTOSAVE ATIVADO] Salva o clique imediatamente no arquivo e atualiza placar
         salvar_progresso_atual()
 
     st.metric(label="Pontos Atuais", value=st.session_state.pontos)
@@ -453,6 +457,7 @@ else:
 
     if st.button("            Click Here          "):
         st.session_state.pontos += st.session_state.poder_clique
+        # [AUTOSAVE ATIVADO] Salva o clique imediatamente no arquivo e atualiza placar
         salvar_progresso_atual()
 
     st.metric(label="Pontos Atuais", value=st.session_state.pontos)
@@ -618,10 +623,11 @@ st.write("(1.6.7) - Adição do painel de adimin com senha e correção de bugs"
 st.write("(1.7.8) - Adição do segundo mundo!!! novas melhorias, nova interface de melhorias, correção de bugs e muito mais!!!")
 st.write("(1.8.9) - Adição de 2 novos ovos(segundo mundo), 6 novos pets e correção de bugs")
 st.write("(1.9.0) - Adição de Sistema de login com proteção de dados por senha!")
+st.write("(2.0.0) - [NOVO] Autosave automatizado e Placar Global atualizado 100% em Tempo Real!")
 
-# --- 🏆 TABELA DE CLASSIFICAÇÃO GLOBAL (MOVIDA PARA O FINAL) ---
+# --- 🏆 TABELA DE CLASSIFICAÇÃO GLOBAL (ATUALIZADA AUTOMATICAMENTE) ---
 st.markdown("---")
-st.subheader("🏆 Top 5 Global:")
+st.subheader("🏆 Top 5 Global (Tempo Real):")
 dados_placar = carregar_leaderboard()
 
 if dados_placar:
