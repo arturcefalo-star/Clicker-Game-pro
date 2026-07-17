@@ -258,7 +258,7 @@ st.title("Clicker Game")
 
 CUSTO_MUNDO_2 = 10000000
 
-st.markdown("### Mundo 2")
+st.markdown("### Mundos:")
 if not st.session_state.mundo_2_desbloqueado:
     desativar_compra_mundo = st.session_state.pontos < CUSTO_MUNDO_2
     if st.button(f"Comprar Mundo 2 (Custo: {CUSTO_MUNDO_2:,} Pts)", disabled=desativar_compra_mundo, use_container_width=True):
@@ -311,7 +311,7 @@ if st.session_state.mundo_atual == 2:
     st.markdown("---")
 
     # --- 6. SISTEMA DE OVOS DO MUNDO 2 (EXCLUSIVO) ---
-    st.subheader("🥚 Ovo Cósmico Exclusivo do Mundo 2:")
+    st.subheader("Ovo Lendário")
     col_egg_m2_1, col_egg_m2_2 = st.columns(2)
 
     with col_egg_m2_1:
