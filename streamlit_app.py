@@ -137,7 +137,7 @@ with col3:
             st.session_state.pet_slot_1 = sorteado_ovo1
             atualizar_poder_clique()
             salvar_jogo()
-            time.sleep(0.1)
+            time.sleep(0.5) # Aguarda o cooldown passar antes de recarregar a tela!
             st.rerun()
 
     if st.session_state.pet_slot_1:
@@ -173,7 +173,7 @@ with col4:
             st.session_state.pet_slot_2 = sorteado_ovo2
             atualizar_poder_clique()
             salvar_jogo()
-            time.sleep(0.1)
+            time.sleep(0.5) # Aguarda o cooldown passar antes de recarregar a tela!
             st.rerun()
 
     if st.session_state.pet_slot_2:
@@ -217,7 +217,7 @@ with col1:
                 st.session_state.poder_base += item['qtd']
                 atualizar_poder_clique()  
                 salvar_jogo()
-                time.sleep(0.1)
+                time.sleep(0.5) # Aguarda o cooldown passar antes de recarregar a tela!
                 st.rerun()
 
 with col2:
@@ -232,7 +232,7 @@ with col2:
                 st.session_state.pontos -= item['custo']
                 st.session_state.pontos_por_segundo += item['qtd']
                 salvar_jogo()
-                time.sleep(0.1)
+                time.sleep(0.5) # Aguarda o cooldown passar antes de recarregar a tela!
                 st.rerun()
 
 # 6. LOG DE ATUALIZAÇÕES
@@ -244,26 +244,22 @@ st.write("(1.1.2) - Adição dos Ovos, correção de bugs e preços balanceados"
 st.write("(1.2.3) - Adição de novos pets e ovos e o log de atualizações")
 st.write("(1.3.4) - Interface reformulada e correção de bugs")
 st.write("(1.4.5) - Sistema de salvamento de jogo, adição de novos autoclickers, adição de um botão de reset e correção de bugs")
+st.write("(1.4.7) - Correção do bug visual dos botões travados após a compra")
 
 # 7. SISTEMA DE RECONSTRUÇÃO/RESET DE JOGO
 st.markdown("---")
 if not st.session_state.confirmando_reset:
-    # Mostra apenas o botão padrão de resetar se o jogador não tiver clicado nele
     if st.button("Resetar Jogo", use_container_width=True):
         st.session_state.confirmando_reset = True
         st.rerun()
 else:
-    # Painel de confirmação caso ele tenha clicado
     st.warning("⚠️ **Você tem certeza absoluta?** Isso apagará permanentemente todos os seus pontos, melhorias e pets salvos!")
     col_sim, col_nao = st.columns(2)
     
     with col_sim:
         if st.button("SIM, deletar tudo", type="primary", use_container_width=True):
-            # Limpa o arquivo físico de save
             if os.path.exists(SAVE_FILE):
                 os.remove(SAVE_FILE)
-            
-            # Reseta os dados internos da sessão corrente para os valores originais de fábrica
             st.session_state.pontos = 0
             st.session_state.poder_base = 1
             st.session_state.pontos_por_segundo = 0
@@ -271,8 +267,7 @@ else:
             st.session_state.pet_slot_2 = None
             st.session_state.ovo1_bloqueado = False
             st.session_state.ultimo_tick = time.time()
-            st.session_state.confirmando_reset = False # Esconde o painel
-            
+            st.session_state.confirmando_reset = False
             atualizar_poder_clique()
             st.success("Jogo reiniciado com sucesso!")
             time.sleep(0.5)
@@ -280,6 +275,5 @@ else:
             
     with col_nao:
         if st.button("NÃO, voltar ao jogo", use_container_width=True):
-            # Cancela a operação e esconde os botões extras trazendo o original de volta
             st.session_state.confirmando_reset = False
             st.rerun()
