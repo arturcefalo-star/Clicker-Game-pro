@@ -188,4 +188,6 @@ st.write("(1.0.0)(Beta) - Lançamento!!!")
 st.write("(1.0.1) - Correção de bugs")
 st.write("(1.1.2) - Adição dos Ovos, correção de bugs e preços balanceados")
 st.write("(1.2.3) - Adição de novos pets e ovos e o log de atualizações")
+st.write("(1.3.4) - Interface reformulada e correção de bugs")
+
 
