@@ -58,17 +58,17 @@ if st.button("            Click Here          ", use_container_width=True):
 # Exibição de Status
 st.metric(label="Pontos Atuais", value=st.session_state.pontos)
 col_status1, col_status2 = st.columns(2)
-col_status1.write(f"**Poder de clique:** {st.session_state.poder_clique} (Base: {st.session_state.poder_base})")
+col_status1.write(f"**Poder de clique:** {st.session_state.poder_clique})
 col_status2.write(f"**Pontos por segundo:** {st.session_state.pontos_por_segundo}")
 
 st.markdown("---")
 
 # 4. SISTEMA DE OVOS (PETS)
-st.subheader("🥚 Sistema de Ovos")
+st.subheader("Comprar Ovos:")
 col3, col4 = st.columns(2)
 
 with col3:
-    st.write("### Ovo Comum")
+    st.write("### Ovo Comum:")
     st.write("Siruriru: 50% (+1 Ponto)")
     st.write("Peppa Pig: 35% (+5 Pontos)")
     st.write("Manoel G: 15% (+10 Pontos)")
@@ -99,7 +99,7 @@ with col3:
         st.caption(f"{pet['nome']} ({pet['chance']}) | +{pet['bonus']} por clique")
 
 with col4:
-    st.write("### Ovo Raro")
+    st.write("### Ovo Raro:")
     st.write("Dora A.: 50% (+10 Pontos)")
     st.write("Sonic: 35% (+50 Pontos)")
     st.write("Michael J.: 15% (+100 Pontos)")
