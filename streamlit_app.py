@@ -167,7 +167,7 @@ loja_em_cooldown = (time.time() - st.session_state.ultima_compra) < 0.5
 
 # --- 4. BARRA LATERAL: PAINEL DO ADMINISTRADOR ---
 with st.sidebar:
-    st.header("⚙️ Painel do Criador")
+    st.header("⚙️ Painel de Adimin")
     if st.checkbox("Ativar Modo Administrador"):
         senha_input = st.text_input("Digite a senha de Admin:", type="password")
         
