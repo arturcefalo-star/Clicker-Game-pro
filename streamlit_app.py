@@ -238,10 +238,10 @@ st.title("Clicker Game")
 # Gerenciador visual de mundos
 CUSTO_MUNDO_2 = 10000000
 
-st.markdown("### 🪐 Sistema de Viagem Espacial")
+st.markdown("### Mundo 2")
 if not st.session_state.mundo_2_desbloqueado:
     desativar_compra_mundo = st.session_state.pontos < CUSTO_MUNDO_2
-    if st.button(f"🚀 Comprar Acesso ao Segundo Mundo (Custo: {CUSTO_MUNDO_2:,} Pts)", disabled=desativar_compra_mundo, use_container_width=True):
+    if st.button(f"🚀 Comprar Mundo 2 (Custo: {CUSTO_MUNDO_2:,} Pts)", disabled=desativar_compra_mundo, use_container_width=True):
         st.session_state.pontos -= CUSTO_MUNDO_2
         st.session_state.mundo_2_desbloqueado = True
         st.session_state.mundo_atual = 2
@@ -251,12 +251,12 @@ if not st.session_state.mundo_2_desbloqueado:
         st.rerun()
 else:
     if st.session_state.mundo_atual == 1:
-        if st.button("🌀 Teletransportar para o Segundo Mundo", type="primary", use_container_width=True):
+        if st.button("🌀 Ir para mundo 2", type="primary", use_container_width=True):
             st.session_state.mundo_atual = 2
             salvar_jogo()
             st.rerun()
     else:
-        if st.button("🌍 Voltar para o Primeiro Mundo (Terra)", type="secondary", use_container_width=True):
+        if st.button("Voltar para mundo 1", type="secondary", use_container_width=True):
             st.session_state.mundo_atual = 1
             salvar_jogo()
             st.rerun()
@@ -269,8 +269,8 @@ if st.session_state.mundo_atual == 2:
     # -------------------------------------------------------------
     # 🌌 INTERFACE DO SEGUNDO MUNDO
     # -------------------------------------------------------------
-    st.subheader("🌌 Você está no Segundo Mundo (Cyber Espaço)")
-    st.info("💡 Neste mundo alienígena, a atmosfera potencializa seus cliques! Seus cliques rendem o DOBRO do valor padrão!")
+    st.subheader("Segundo mundo")
+    st.info("2X de multiplicador de mundo")
     
     st.write("Trilha sonora espacial: on/off ")
     try:
@@ -279,7 +279,7 @@ if st.session_state.mundo_atual == 2:
         pass
 
     # Botão de Clique do Mundo 2 (Ganha o DOBRO do poder de clique)
-    if st.button("✨ ⚡ CLIQUE QUÂNTICO AQUI ⚡ ✨", use_container_width=True):
+    if st.button("Click Here", use_container_width=True):
         st.session_state.pontos += (st.session_state.poder_clique * 2)
         salvar_jogo()
 
