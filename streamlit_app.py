@@ -6,7 +6,7 @@ import os
 from streamlit_autorefresh import st_autorefresh
 
 # --- CONFIGURAÇÕES DE ADMIN ---
-SENHA_ADMIN = "minhasenha123"  # ⚠️ ALTERE PARA A SUA SENHA SECRETA!
+SENHA_ADMIN = "XxIIlIIxX"  # ⚠️ ALTERE PARA A SUA SENHA SECRETA!
 
 # Arquivos de salvamento
 SAVE_FILE = "savegame.json"
