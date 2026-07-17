@@ -278,7 +278,7 @@ st.title("Clicker Game")
 
 CUSTO_MUNDO_2 = 10000000
 
-st.markdown("### Mundo 2")
+st.markdown("### Mundos:")
 if not st.session_state.mundo_2_desbloqueado:
     desativar_compra_mundo = st.session_state.pontos < CUSTO_MUNDO_2
     if st.button(f"Comprar Mundo 2 (Custo: {CUSTO_MUNDO_2:,} Pts)", disabled=desativar_compra_mundo, use_container_width=True):
