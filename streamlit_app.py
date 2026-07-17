@@ -30,7 +30,7 @@ BONUS_PET_M2_R2 = 25000000
 NOME_PET_M2_R3 = "Pintinho A."
 BONUS_PET_M2_R3 = 50000000
 
-CUSTO_OVO_MUNDO_2_CARO = 50000000   # Custo do segundo ovo do Mundo 2
+CUSTO_OVO_MUNDO_2_CARO = 500000000   # Custo do segundo ovo do Mundo 2
 # =====================================================================
 
 # --- CONFIGURAÇÕES DE ADMIN ---
