@@ -278,7 +278,8 @@ with col2:
         texto = f"Gerador +{item['qtd']}/s = {item['custo']} Pts"
         desativado = st.session_state.pontos < item['custo'] or loja_em_cooldown
 
-        if st.button(texto, key=f"passivo_{item['qtd']}", disabled=disabled, use_container_width=True):
+        # Linha corrigida de disabled=disabled para disabled=desativado
+        if st.button(texto, key=f"passivo_{item['qtd']}", disabled=desativado, use_container_width=True):
             st.session_state.ultima_compra = time.time()
             if st.session_state.pontos >= item['custo']: 
                 st.session_state.pontos -= item['custo']
