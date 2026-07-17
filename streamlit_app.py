@@ -242,7 +242,8 @@ st.write("(1.1.2) - Adição dos Ovos, correção de bugs e preços balanceados"
 st.write("(1.2.3) - Adição de novos pets e ovos e o log de atualizações")
 st.write("(1.3.4) - Interface reformulada e correção de bugs")
 st.write("(1.4.5) - Sistema de salvamento de jogo, adição de novos autoclickers, adição de um botão de reset e correção de bugs")
-st.write("(1.4.8) - Removido o bloqueio do Ovo Comum ao comprar o Ovo Raro")
+st.write("(1.4.6) - Remoção do bloqueio do ovo comum após a compra do ovo raro e correção de bugs")
+
 
 # 7. SISTEMA DE RECONSTRUÇÃO/RESET DE JOGO
 st.markdown("---")
