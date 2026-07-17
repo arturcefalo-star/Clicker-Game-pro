@@ -31,7 +31,6 @@ BONUS_PET_M2_R3 = 50000000
 CUSTO_OVO_MUNDO_2_CARO = 500000000   # Custo do segundo ovo do Mundo 2
 # =====================================================================
 
-# ATUALIZADO: Nova senha definida aqui
 SENHA_ADMIN = "XXxx67xxXX"
 ACCOUNTS_FILE = "usuarios.json"
 LEADERBOARD_FILE = "leaderboard.json"
@@ -81,7 +80,7 @@ def carregar_leaderboard():
             usuarios_unicos = {}
             for jogador in dados:
                 nome = jogador["Jogador"]
-                pontos = jogador.get("Pontos", jogador.get("Points", 0))
+                pontos = advertiser_points = jogador.get("Pontos", jogador.get("Points", 0))
                 
                 if nome.lower() not in usuarios_unicos or pontos > usuarios_unicos[nome.lower()]["Pontos"]:
                     usuarios_unicos[nome.lower()] = {"Jogador": nome, "Pontos": pontos}
@@ -303,7 +302,7 @@ with st.sidebar:
                     col_adm1, col_adm2, col_adm3, col_adm4 = st.columns([2, 1, 1, 1])
                     col_adm1.write(f"**{nome_jogador}**: {jogador['Pontos']} pts")
                     
-                    # CORRIGIDO: Botão BAN agora funciona e limpa o progresso de QUALQUER jogador no banco
+                    # MODIFICADO: O botão "Ban" agora apenas limpa os status (reseta) sem remover do Placar Global
                     if col_adm2.button("Ban", key=f"del_{i}"):
                         if key_jogador in usuarios_db:
                             usuarios_db[key_jogador]["dados"] = {
@@ -314,7 +313,11 @@ with st.sidebar:
                             }
                             salvar_todos_usuarios(usuarios_db)
                         
-                        # Se o admin banir a si mesmo, limpa a sessão local também
+                        # Atualiza a pontuação dele no placar para 0
+                        jogador['Pontos'] = 0
+                        salvar_leaderboard_completo(placar_completo)
+
+                        # Se o admin aplicar em si mesmo, atualiza localmente
                         if key_jogador == st.session_state.nome_usuario.lower():
                             st.session_state.pontos = 0
                             st.session_state.poder_base = 1
@@ -328,11 +331,8 @@ with st.sidebar:
                             st.session_state.pontos_leaderboard_cache = 0
                             atualizar_poder_clique()
 
-                        placar_completo.pop(i)
-                        salvar_leaderboard_completo(placar_completo)
                         st.rerun()
                     
-                    # CORRIGIDO: Botão ADD agora funciona para todos os jogadores no banco
                     if col_adm3.button("Add", key=f"add_{i}"):
                         jogador['Pontos'] += qtd_pontos
                         salvar_leaderboard_completo(placar_completo)
@@ -346,7 +346,6 @@ with st.sidebar:
                             st.session_state.pontos_leaderboard_cache = st.session_state.pontos
                         st.rerun()
 
-                    # CORRIGIDO: Botão REM agora funciona para todos os jogadores no banco
                     if col_adm4.button("Rem", key=f"rem_{i}"):
                         jogador['Pontos'] = max(0, jogador['Pontos'] - qtd_pontos)
                         salvar_leaderboard_completo(placar_completo)
@@ -662,10 +661,10 @@ st.subheader("Atualizações:")
 st.write("(1.0.0)(Beta) - Lançamento!!!")
 st.write("(1.0.1) - Correção de bugs")
 st.write("(1.1.2) - Adição dos Ovos, correção de bugs e preços balanceados")
-st.write("(1.2.3) - Adição de novos pets e ovos e o log de atualizações")
+st.write("(1.2.3) - Adição de novos pets e ovos e o log de updates")
 st.write("(1.3.4) - Interface reformulada e correção de bugs")
 st.write("(1.4.5) - Sistema de salvamento de jogo, adição de novos autoclickers, adição de um botão de reset e correção de bugs")
-st.write("(1.5.6) - Adição do top global (Coloque seu nome na barrinha e clique em enviar e clique novamente para atualizar)")
+st.write("(1.5.6) - Adição do top global")
 st.write("(1.6.7) - Adição do painel de adimin com senha e correção de bugs")
 st.write("(1.7.8) - Adição do segundo mundo!!! novas melhorias, nova interface de melhorias, correção de bugs e muito mais!!!")
 st.write("(1.8.9) - Adição de 2 novos ovos(segundo mundo), 6 novos pets e correção de bugs")
