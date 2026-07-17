@@ -570,8 +570,18 @@ with col2:
 # --- 8. LOG DE ATUALIZAÇÕES ---
 st.markdown("---")
 st.subheader("Atualizações:")
+st.subheader("Atualizações:")
+st.subheader("Atualizações:")
 st.write("(1.0.0)(Beta) - Lançamento!!!")
-st.write("(1.7.0) - 🌌 DESBLOQUEIO DO SEGUNDO MUNDO! Novo portal de teletransporte e bônus quântico de cliques por 10M de pontos!")
+st.write("(1.0.1) - Correção de bugs")
+st.write("(1.1.2) - Adição dos Ovos, correção de bugs e preços balanceados")
+st.write("(1.2.3) - Adição de novos pets e ovos e o log de atualizações")
+st.write("(1.3.4) - Interface reformulada e correção de bugs")
+st.write("(1.4.5) - Sistema de salvamento de jogo, adição de novos autoclickers, adição de um botão de reset e correção de bugs")
+st.write("(1.5.6) - Adição do top global (Coloque seu nome na barrinha e clique em enviar e clique novamente para atualizar)")
+st.write("(1.6.7) - Adição do painel de adimin com senha e correção de bugs")
+st.write("(1.7.8) - Adição do segundo mundo!!! novas melhorias, nova interface de melhorias, correção de bugs e muito mais!!!")
+st.write("(1.8.9) - Adição de 2 novos ovos(segundo mundo), 6 novos pets e correção de bugs")
 
 # --- 9. TABELA DE CLASSIFICAÇÃO ---
 st.markdown("---")
