@@ -110,7 +110,7 @@ def atualizar_no_leaderboard(nome, pontos):
             j["Pontos"] = pontos  
             j["Jogador"] = nome
             break
-    if not encontrado:
+    if not encontrando:
         leaderboard.append({"Jogador": nome, "Pontos": pontos})
     
     leaderboard = sorted(leaderboard, key=lambda x: x["Pontos"], reverse=True)
@@ -258,7 +258,8 @@ if st.session_state.nome_usuario != "" and os.path.exists(LEADERBOARD_FILE):
     except Exception:
         pass
 
-loja_em_cooldown = (time.time() - st.session_state.ultima_compra) < 0.5
+# COOLDOWN DE COMPRA (Aumentado para 0.6s para evitar cliques fantasmas repetidos antes do rerun)
+loja_em_cooldown = (time.time() - st.session_state.ultima_compra) < 0.6
 
 # --- BARRA LATERAL: LOGOUT E PAINEL ADMIN ---
 with st.sidebar:
@@ -329,13 +330,14 @@ st.markdown("### Mundos:")
 if not st.session_state.mundo_2_desbloqueado:
     desativar_compra_mundo = st.session_state.pontos < CUSTO_MUNDO_2
     if st.button(f"Comprar Mundo 2 (Custo: {CUSTO_MUNDO_2:,} Pts)", disabled=desativar_compra_mundo, use_container_width=True):
-        st.session_state.pontos -= CUSTO_MUNDO_2
-        st.session_state.mundo_2_desbloqueado = True
-        st.session_state.mundo_atual = 2
-        salvar_progresso_atual()
-        st.success("Indo para o mundo 2...")
-        time.sleep(1)
-        st.rerun()
+        if st.session_state.pontos >= CUSTO_MUNDO_2:
+            st.session_state.pontos -= CUSTO_MUNDO_2
+            st.session_state.mundo_2_desbloqueado = True
+            st.session_state.mundo_atual = 2
+            salvar_progresso_atual()
+            st.success("Indo para o mundo 2...")
+            time.sleep(1)
+            st.rerun()
 else:
     if st.session_state.mundo_atual == 1:
         if st.button("Teleportar para mundo 2", type="primary", use_container_width=True):
@@ -454,7 +456,7 @@ else:
 
     if st.button("            Click Here          ", key="click_m1_btn"):
         st.session_state.pontos += st.session_state.poder_clique
-        st.session_state.points_leaderboard_cache = st.session_state.pontos
+        st.session_state.pontos_leaderboard_cache = st.session_state.pontos
         salvar_progresso_atual()
         st.rerun()
 
@@ -580,14 +582,16 @@ with col1:
             key_btn = f"c_{st.session_state.mundo_atual}_{i}"
 
             if st.button(texto, key=key_btn, disabled=desativado, use_container_width=True):
-                st.session_state.ultima_compra = time.time()
-                st.session_state.pontos -= item['custo']
-                st.session_state.poder_base += item['qtd']
-                atualizar_poder_clique()  
-                st.session_state.pontos_leaderboard_cache = st.session_state.pontos
-                salvar_progresso_atual()
-                time.sleep(0.5)
-                st.rerun()
+                # TRAVA ADICIONAL DE SEGURANÇA EM BACKEND
+                if st.session_state.pontos >= item['custo']:
+                    st.session_state.ultima_compra = time.time()
+                    st.session_state.pontos -= item['custo']
+                    st.session_state.poder_base += item['qtd']
+                    atualizar_poder_clique()  
+                    st.session_state.pontos_leaderboard_cache = st.session_state.pontos
+                    salvar_progresso_atual()
+                    time.sleep(0.1) # Pequena pausa física
+                    st.rerun()
 
 with col2:
     st.subheader("Auto Clickers")
@@ -598,13 +602,15 @@ with col2:
             key_btn = f"p_{st.session_state.mundo_atual}_{i}"
 
             if st.button(texto, key=key_btn, disabled=desativado, use_container_width=True):
-                st.session_state.ultima_compra = time.time()
-                st.session_state.pontos -= item['custo']
-                st.session_state.pontos_por_segundo += item['qtd']
-                st.session_state.pontos_leaderboard_cache = st.session_state.pontos
-                salvar_progresso_atual()
-                time.sleep(0.5)
-                st.rerun()
+                # TRAVA ADICIONAL DE SEGURANÇA EM BACKEND
+                if st.session_state.pontos >= item['custo']:
+                    st.session_state.ultima_compra = time.time()
+                    st.session_state.pontos -= item['custo']
+                    st.session_state.pontos_por_segundo += item['qtd']
+                    st.session_state.pontos_leaderboard_cache = st.session_state.pontos
+                    salvar_progresso_atual()
+                    time.sleep(0.1) # Pequena pausa física
+                    st.rerun()
 
 # --- ATUALIZAÇÕES AUTOMÁTICAS NO LEADERBOARD ---
 atualizar_no_leaderboard(st.session_state.nome_usuario, st.session_state.pontos)
