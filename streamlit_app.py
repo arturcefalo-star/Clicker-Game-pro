@@ -251,7 +251,7 @@ if not st.session_state.mundo_2_desbloqueado:
         st.rerun()
 else:
     if st.session_state.mundo_atual == 1:
-        if st.button("🌀 Ir para mundo 2", type="primary", use_container_width=True):
+        if st.button("Teleportar para mundo 2", type="primary", use_container_width=True):
             st.session_state.mundo_atual = 2
             salvar_jogo()
             st.rerun()
@@ -286,8 +286,8 @@ if st.session_state.mundo_atual == 2:
     st.metric(label="Pontos Atuais", value=st.session_state.pontos)
     
     col_status1, col_status2 = st.columns(2)
-    col_status1.write(f"**Poder de clique local:** {st.session_state.poder_clique * 2} (Bônus de Mundo!)")
-    col_status2.write(f"**Pontos por segundo passivos:** {st.session_state.pontos_por_segundo}")
+    col_status1.write(f"**Poder de clique:** {st.session_state.poder_clique * 2} (2X)")
+    col_status2.write(f"**Pontos por segundo:** {st.session_state.pontos_por_segundo}")
 
     st.warning("🪐 As lojas e chocadores de ovos ficaram para trás no Primeiro Mundo. Use os portais de viagem acima para gerenciar seus negócios!")
 
@@ -295,7 +295,7 @@ else:
     # -------------------------------------------------------------
     # 🌍 INTERFACE DO PRIMEIRO MUNDO (CONTEÚDO ORIGINAL DO SEU JOGO)
     # -------------------------------------------------------------
-    st.subheader("🌍 Você está no Primeiro Mundo (Terra)")
+    st.subheader("Primeiro Mundo")
     
     st.write("Trilha sonora: on/off ")
     try:
