@@ -249,7 +249,7 @@ st.write("(1.4.5) - Sistema de salvamento de jogo, adição de novos autoclicker
 st.markdown("---")
 if not st.session_state.confirmando_reset:
     # Mostra apenas o botão padrão de resetar se o jogador não tiver clicado nele
-    if st.button("🔴 Resetar Jogo", use_container_width=True):
+    if st.button("Resetar Jogo", use_container_width=True):
         st.session_state.confirmando_reset = True
         st.rerun()
 else:
@@ -258,7 +258,7 @@ else:
     col_sim, col_nao = st.columns(2)
     
     with col_sim:
-        if st.button("✅ SIM, deletar tudo", type="primary", use_container_width=True):
+        if st.button("SIM, deletar tudo", type="primary", use_container_width=True):
             # Limpa o arquivo físico de save
             if os.path.exists(SAVE_FILE):
                 os.remove(SAVE_FILE)
@@ -279,7 +279,7 @@ else:
             st.rerun()
             
     with col_nao:
-        if st.button("❌ NÃO, voltar ao jogo", use_container_width=True):
+        if st.button("NÃO, voltar ao jogo", use_container_width=True):
             # Cancela a operação e esconde os botões extras trazendo o original de volta
             st.session_state.confirmando_reset = False
             st.rerun()
