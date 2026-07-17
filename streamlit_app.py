@@ -331,11 +331,11 @@ if st.session_state.mundo_atual == 2:
     st.markdown("---")
 
     # --- 6. SISTEMA DE OVOS DO MUNDO 2 (IGUAL AO MUNDO 1) ---
-    st.subheader("Comprar Ovos Cósmicos:")
+    st.subheader("Comprar ovos:")
     col_m2_egg1, col_m2_egg2 = st.columns(2)
 
     with col_m2_egg1:
-        st.write("### Ovo Quântico Comum:")
+        st.write("### Ovo Épico:")
         st.write(f"{NOME_PET_7}: 50% (+{BONUS_PET_7:,} Pts)")
         st.write(f"{NOME_PET_8}: 35% (+{BONUS_PET_8:,} Pts)")
         st.write(f"{NOME_PET_9}: 15% (+{BONUS_PET_9:,} Pts)")
@@ -368,7 +368,7 @@ if st.session_state.mundo_atual == 2:
             st.caption(f"{pet['nome']} ({pet['chance']}) | +{pet['bonus']:,} por clique")
 
     with col_m2_egg2:
-        st.write("### Ovo Quântico Raro:")
+        st.write("### Ovo Lendádio:")
         st.write(f"{NOME_PET_M2_R1}: 50% (+{BONUS_PET_M2_R1:,} Pts)")
         st.write(f"{NOME_PET_M2_R2}: 35% (+{BONUS_PET_M2_R2:,} Pts)")
         st.write(f"{NOME_PET_M2_R3}: 15% (+{BONUS_PET_M2_R3:,} Pts)")
