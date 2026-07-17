@@ -6,22 +6,36 @@ import os
 from streamlit_autorefresh import st_autorefresh
 
 # =====================================================================
-# ⚙️ COLOQUE AQUI OS NOMES E BÔNUS PERSONALIZADOS DO OVO DO MUNDO 2!
+# ⚙️ EDITE AQUI OS NOMES E BÔNUS DOS PETS DO MUNDO 2 (LOGOS 7, 8 E 9)
 # =====================================================================
-NOME_PET_7 = "Barbie"  # Nome do Logo 7
-BONUS_PET_7 = 5000000                      # Bônus por clique do Logo 7
+# --- OVO CÓSMICO 1 (Mais barato) ---
+NOME_PET_7 = "Goku Instinto"  # Logo 7
+BONUS_PET_7 = 5000
 
-NOME_PET_8 = "Homem A."    # Nome do Logo 8
-BONUS_PET_8 = 10000000                     # Bônus por clique do Logo 8
+NOME_PET_8 = "Vegeta Ego"     # Logo 8
+BONUS_PET_8 = 15000
 
-NOME_PET_9 = "Tame do cossita"          # Nome do Logo 9
-BONUS_PET_9 = 50000000                    # Bônus por clique do Logo 9
+NOME_PET_9 = "Saitama Careca"  # Logo 9
+BONUS_PET_9 = 50000
 
-CUSTO_OVO_MUNDO_2 = 5000000             # Custo para abrir o ovo no Mundo 2
+CUSTO_OVO_M2_BARATO = 500000   # Custo do primeiro ovo do Mundo 2
+
+# --- OVO CÓSMICO 2 (Mais caro/raro) ---
+# Você pode alterar esses nomes fictícios ou apontar para outros arquivos de imagem!
+NOME_PET_M2_R1 = "Billz Deus"
+BONUS_PET_M2_R1 = 100000
+
+NOME_PET_M2_R2 = "Whis Anjo"
+BONUS_PET_M2_R2 = 500000
+
+NOME_PET_M2_R3 = "Zen-Oh"
+BONUS_PET_M2_R3 = 2000000
+
+CUSTO_OVO_M2_CARO = 5000000   # Custo do segundo ovo do Mundo 2
 # =====================================================================
 
 # --- CONFIGURAÇÕES DE ADMIN ---
-SENHA_ADMIN = "XxIIlIIxX"  # ⚠️ ALTERE PARA A SUA SENHA SECRETA!
+SENHA_ADMIN = "XxIIlIIxX"
 
 # Arquivos de salvamento
 SAVE_FILE = "savegame.json"
@@ -36,7 +50,8 @@ def salvar_jogo():
         "pontos_por_segundo": st.session_state.pontos_por_segundo,
         "pet_slot_1": st.session_state.pet_slot_1,
         "pet_slot_2": st.session_state.pet_slot_2,
-        "pet_slot_mundo2": st.session_state.pet_slot_mundo2,  # Novo slot salvo
+        "pet_slot_m2_1": st.session_state.pet_slot_m2_1,
+        "pet_slot_m2_2": st.session_state.pet_slot_m2_2,
         "ultimo_tick": st.session_state.ultimo_tick,
         "ja_enviou": st.session_state.ja_enviou,
         "nome_usuario": st.session_state.nome_usuario,
@@ -144,13 +159,17 @@ if "ultima_compra" not in st.session_state:
 if "confirmando_reset" not in st.session_state:
     st.session_state.confirmando_reset = False
 
-# Slots de Pets
+# Slots de Pets Mundo 1
 if "pet_slot_1" not in st.session_state:
     st.session_state.pet_slot_1 = dados_salvos.get("pet_slot_1", None)
 if "pet_slot_2" not in st.session_state:
     st.session_state.pet_slot_2 = dados_salvos.get("pet_slot_2", None)
-if "pet_slot_mundo2" not in st.session_state:
-    st.session_state.pet_slot_mundo2 = dados_salvos.get("pet_slot_mundo2", None)
+
+# Slots de Pets Mundo 2
+if "pet_slot_m2_1" not in st.session_state:
+    st.session_state.pet_slot_m2_1 = dados_salvos.get("pet_slot_m2_1", None)
+if "pet_slot_m2_2" not in st.session_state:
+    st.session_state.pet_slot_m2_2 = dados_salvos.get("pet_slot_m2_2", None)
 
 if "pontos_leaderboard_cache" not in st.session_state:
     st.session_state.pontos_leaderboard_cache = -1
@@ -161,8 +180,10 @@ def atualizar_poder_clique():
         bonus_total += st.session_state.pet_slot_1["bonus"]
     if st.session_state.pet_slot_2:
         bonus_total += st.session_state.pet_slot_2["bonus"]
-    if st.session_state.pet_slot_mundo2:
-        bonus_total += st.session_state.pet_slot_mundo2["bonus"]
+    if st.session_state.pet_slot_m2_1:
+        bonus_total += st.session_state.pet_slot_m2_1["bonus"]
+    if st.session_state.pet_slot_m2_2:
+        bonus_total += st.session_state.pet_slot_m2_2["bonus"]
     st.session_state.poder_clique = st.session_state.poder_base + bonus_total
 
 atualizar_poder_clique()
@@ -245,7 +266,7 @@ with st.sidebar:
                         st.rerun()
 
                     if col_adm4.button("Rem", key=f"rem_{i}", help=f"Remover -{qtd_pontos} pontos"):
-                        jogador['Pontos'] = max(0, grandfather=max(0, jogador['Pontos'] - qtd_pontos))
+                        jogador['Pontos'] = max(0, jogador['Pontos'] - qtd_pontos)
                         salvar_leaderboard_completo(placar_completo)
                         st.rerun()
             else:
@@ -258,7 +279,7 @@ st.title("Clicker Game")
 
 CUSTO_MUNDO_2 = 10000000
 
-st.markdown("### Mundos:")
+st.markdown("### Mundo 2")
 if not st.session_state.mundo_2_desbloqueado:
     desativar_compra_mundo = st.session_state.pontos < CUSTO_MUNDO_2
     if st.button(f"Comprar Mundo 2 (Custo: {CUSTO_MUNDO_2:,} Pts)", disabled=desativar_compra_mundo, use_container_width=True):
@@ -310,45 +331,75 @@ if st.session_state.mundo_atual == 2:
 
     st.markdown("---")
 
-    # --- 6. SISTEMA DE OVOS DO MUNDO 2 (EXCLUSIVO) ---
-    st.subheader("Ovo Lendário")
-    col_egg_m2_1, col_egg_m2_2 = st.columns(2)
+    # --- 6. SISTEMA DE OVOS DO MUNDO 2 (IGUAL AO MUNDO 1) ---
+    st.subheader("Comprar Ovos Cósmicos:")
+    col_m2_egg1, col_m2_egg2 = st.columns(2)
 
-    with col_egg_m2_1:
-        st.write(f"### Ovo Quântico:")
-        st.write(f"{NOME_PET_7}: 50% (+{BONUS_PET_7:,} Pontos)")
-        st.write(f"{NOME_PET_8}: 35% (+{BONUS_PET_8:,} Pontos)")
-        st.write(f"{NOME_PET_9}: 15% (+{BONUS_PET_9:,} Pontos)")
+    with col_m2_egg1:
+        st.write("### Ovo Quântico Comum:")
+        st.write(f"{NOME_PET_7}: 50% (+{BONUS_PET_7:,} Pts)")
+        st.write(f"{NOME_PET_8}: 35% (+{BONUS_PET_8:,} Pts)")
+        st.write(f"{NOME_PET_9}: 15% (+{BONUS_PET_9:,} Pts)")
         
-        desativar_ovo_m2 = st.session_state.pontos < CUSTO_OVO_MUNDO_2 or loja_em_cooldown
+        desativar_m2_ovo1 = st.session_state.pontos < CUSTO_OVO_MUNDO_2_BARATO or loja_em_cooldown
         
-        if st.button(f"Abrir Ovo Cósmico = {CUSTO_OVO_MUNDO_2:,} Pontos", disabled=desativar_ovo_m2, key="botao_ovo_m2"):
+        if st.button(f"Abrir Ovo = {CUSTO_OVO_MUNDO_2_BARATO:,} Pontos", disabled=desativar_m2_ovo1, key="botao_m2_ovo1"):
             st.session_state.ultima_compra = time.time()  
-            if st.session_state.pontos >= CUSTO_OVO_MUNDO_2:
-                st.session_state.pontos -= CUSTO_OVO_MUNDO_2
-                sorteado_m2 = random.choices(
+            if st.session_state.pontos >= CUSTO_OVO_MUNDO_2_BARATO:
+                st.session_state.pontos -= CUSTO_OVO_MUNDO_2_BARATO
+                sorteado = random.choices(
                    [{"nome": NOME_PET_7, "arquivo": "logo7.png", "bonus": BONUS_PET_7, "chance": "50%"}, 
                     {"nome": NOME_PET_8, "arquivo": "logo8.png", "bonus": BONUS_PET_8, "chance": "35%"},
                     {"nome": NOME_PET_9, "arquivo": "logo9.png", "bonus": BONUS_PET_9, "chance": "15%"}],
                    weights=[50, 35, 15], k=1
                 )[0]
-                st.session_state.pet_slot_mundo2 = sorteado_m2
+                st.session_state.pet_slot_m2_1 = sorteado
                 atualizar_poder_clique()
                 salvar_jogo()
                 time.sleep(0.5) 
                 st.rerun()
 
-    with col_egg_m2_2:
-        if st.session_state.pet_slot_mundo2:
-            pet = st.session_state.pet_slot_mundo2
-            st.write("**Pet Espacial Equipado:**")
+        if st.session_state.pet_slot_m2_1:
+            pet = st.session_state.pet_slot_m2_1
+            st.write("**Pet Equipado (Slot 1):**")
             try:
-                st.image(pet["arquivo"], width=150)
+                st.image(pet["arquivo"], width=188)
             except Exception:
                 st.warning(f"⚠️ Imagem ({pet['arquivo']}) não encontrada.")
             st.caption(f"{pet['nome']} ({pet['chance']}) | +{pet['bonus']:,} por clique")
-        else:
-            st.info("Você ainda não chocou nenhum Pet do Mundo 2 neste slot.")
+
+    with col_m2_egg2:
+        st.write("### Ovo Quântico Raro:")
+        st.write(f"{NOME_PET_M2_R1}: 50% (+{BONUS_PET_M2_R1:,} Pts)")
+        st.write(f"{NOME_PET_M2_R2}: 35% (+{BONUS_PET_M2_R2:,} Pts)")
+        st.write(f"{NOME_PET_M2_R3}: 15% (+{BONUS_PET_M2_R3:,} Pts)")
+        
+        desativar_m2_ovo2 = st.session_state.pontos < CUSTO_OVO_MUNDO_2_CARO or loja_em_cooldown
+        
+        if st.button(f"Abrir Ovo = {CUSTO_OVO_MUNDO_2_CARO:,} Pontos", disabled=desativar_m2_ovo2, key="botao_m2_ovo2"):
+            st.session_state.ultima_compra = time.time()
+            if st.session_state.pontos >= CUSTO_OVO_MUNDO_2_CARO:
+                st.session_state.pontos -= CUSTO_OVO_MUNDO_2_CARO
+                sorteado = random.choices(
+                   [{"nome": NOME_PET_M2_R1, "arquivo": "logo4.png", "bonus": BONUS_PET_M2_R1, "chance": "50%"}, 
+                    {"nome": NOME_PET_M2_R2, "arquivo": "logo5.png", "bonus": BONUS_PET_M2_R2, "chance": "35%"},
+                    {"nome": NOME_PET_M2_R3, "arquivo": "logo6.png", "bonus": BONUS_PET_M2_R3, "chance": "15%"}],
+                   weights=[50, 35, 15], k=1
+                )[0]
+                st.session_state.pet_slot_m2_2 = sorteado
+                atualizar_poder_clique()
+                salvar_jogo()
+                time.sleep(0.5) 
+                st.rerun()
+
+        if st.session_state.pet_slot_m2_2:
+            pet = st.session_state.pet_slot_m2_2
+            st.write("**Pet Equipado (Slot 2):**")
+            try:
+                st.image(pet["arquivo"], width=100)
+            except Exception:
+                st.warning(f"⚠️ Imagem ({pet['arquivo']}) não encontrada.")
+            st.caption(f"{pet['nome']} ({pet['chance']}) | +{pet['bonus']:,} por clique")
 
 else:
     # -------------------------------------------------------------
@@ -601,7 +652,8 @@ else:
             st.session_state.pontos_por_segundo = 0
             st.session_state.pet_slot_1 = None
             st.session_state.pet_slot_2 = None
-            st.session_state.pet_slot_mundo2 = None
+            st.session_state.pet_slot_m2_1 = None
+            st.session_state.pet_slot_m2_2 = None
             st.session_state.ultimo_tick = time.time()
             st.session_state.ja_enviou = False  
             st.session_state.nome_usuario = ""
