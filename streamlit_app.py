@@ -159,7 +159,7 @@ melhorias_passivas = [
 ]
 
 with col1:
-    st.subheader("🛒 Melhoria Clicker")
+    st.subheader("Melhoria Clicker")
     for item in melhorias_clique:
         texto = f"Melhoria +{item['qtd']} = {item['custo']} Pts"
         desativado = st.session_state.pontos < item['custo']
@@ -171,7 +171,7 @@ with col1:
             st.rerun()
 
 with col2:
-    st.subheader("⚡ Auto Clickers")
+    st.subheader("Auto Clickers")
     for item in melhorias_passivas:
         texto = f"Gerador +{item['qtd']}/s = {item['custo']} Pts"
         desativado = st.session_state.pontos < item['custo']
@@ -183,10 +183,9 @@ with col2:
 
 # 6. LOG DE ATUALIZAÇÕES
 st.markdown("---")
-st.subheader("Notas de Atualização")
-st.markdown("""
-*   **(1.2.3)** - Adição de novos pets, ovos e registro de atualizações.
-*   **(1.1.2)** - Adição de ovos, correção de bugs e balanceamento de preços.
-*   **(1.0.1)** - Correção de bugs estruturais de cálculo de pontos.
-*   **(1.0.0-Beta)** - Lançamento inicial! 🎉
-""")
+st.subheader("Atualizações:")
+st.write("(1.0.0)(Beta) - Lançamento!!!")
+st.write("(1.0.1) - Correção de bugs")
+st.write("(1.1.2) - Adição dos Ovos, correção de bugs e preços balanceados")
+st.write("(1.2.3) - Adição de novos pets e ovos e o log de atualizações")
+
