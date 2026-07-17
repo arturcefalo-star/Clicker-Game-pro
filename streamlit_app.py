@@ -466,7 +466,7 @@ st.write("(1.3.4) - Interface reformulada e correção de bugs")
 st.write("(1.4.5) - Sistema de salvamento de jogo, adição de novos autoclickers, adição de um botão de reset e correção de bugs")
 st.write("(1.5.6) - Adição do top global (Coloque seu nome na barrinha e clique em enviar e clique novamente para atualizar)")
 st.write("(1.6.7) - Adição do painel de adimin com senha e correção de bugs")
-st.write("(1.7.8) - Adição do segundo mundo!!! novas melhorias, correção de bugs e muito mais!!!")
+st.write("(1.7.8) - Adição do segundo mundo!!! novas melhorias, nova interface de melhorias, correção de bugs e muito mais!!!")
 
 # --- 9. TABELA DE CLASSIFICAÇÃO ---
 st.markdown("---")
