@@ -289,7 +289,7 @@ st.write("(1.7.0) - Sistema Inteligente de Troca e Substituição Dinâmica de N
 
 # --- 7. TABELA DE CLASSIFICAÇÃO COM TROCA DE NOME REAL ---
 st.markdown("---")
-st.subheader("Top 5 global")
+st.subheader("Top 5 global:")
 
 # Busca dados iniciais
 dados_placar = carregar_leaderboard()
