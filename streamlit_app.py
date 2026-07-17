@@ -362,7 +362,7 @@ if st.session_state.mundo_atual == 2:
             pet = st.session_state.pet_slot_m2_1
             st.write("**Pet Equipado (Slot 1):**")
             try:
-                st.image(pet["arquivo"], width=188)
+                st.image(pet["arquivo"], width=167)
             except Exception:
                 st.warning(f"⚠️ Imagem ({pet['arquivo']}) não encontrada.")
             st.caption(f"{pet['nome']} ({pet['chance']}) | +{pet['bonus']:,} por clique")
