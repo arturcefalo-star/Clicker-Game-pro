@@ -5,8 +5,9 @@ import json
 import os
 from streamlit_autorefresh import st_autorefresh
 
-# Nome do arquivo onde o jogo será salvo
+# Arquivos de salvamento
 SAVE_FILE = "savegame.json"
+LEADERBOARD_FILE = "leaderboard.json"
 
 # Funções para Salvar e Carregar o Jogo
 def salvar_jogo():
@@ -30,6 +31,25 @@ def carregar_jogo():
             return None
     return None
 
+# Funções do Placar de Líderes (Leaderboard)
+def carregar_leaderboard():
+    if os.path.exists(LEADERBOARD_FILE):
+        try:
+            with open(LEADERBOARD_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return []
+    return []
+
+def salvar_no_leaderboard(nome, pontos):
+    leaderboard = carregar_leaderboard()
+    # Adiciona o novo recorde
+    leaderboard.append({"Jogador": nome, "Pontos": pontos})
+    # Ordena do maior para o menor e pega os 5 melhores
+    leaderboard = sorted(leaderboard, key=lambda x: x["Pontos"], reverse=True)[:5]
+    with open(LEADERBOARD_FILE, "w", encoding="utf-8") as f:
+        json.dump(leaderboard, f, ensure_ascii=False, indent=4)
+
 # Tentativa de carregar dados salvos anteriormente
 dados_salvos = carregar_jogo()
 
@@ -45,7 +65,7 @@ if "pontos_por_segundo" not in st.session_state:
 if "ultimo_tick" not in st.session_state:
     st.session_state.ultimo_tick = dados_salvos.get("ultimo_tick", time.time()) if dados_salvos else time.time()
 
-# SISTEMA DE DELAY: Guarda o momento da última compra para evitar spam
+# SISTEMA DE DELAY
 if "ultima_compra" not in st.session_state:
     st.session_state.ultima_compra = 0.0
 
@@ -82,7 +102,7 @@ if tempo_passado >= 1.0:
     st.session_state.ultimo_tick = agora - (tempo_passado - ciclos)
     salvar_jogo()
 
-# Verifica se a loja está em Cooldown (Bloqueia cliques feitos antes de 0.5 segundos)
+# Verifica se a loja está em Cooldown
 loja_em_cooldown = (time.time() - st.session_state.ultima_compra) < 0.5
 
 # 3. INTERFACE PRINCIPAL
@@ -94,7 +114,7 @@ try:
 except Exception:
     st.caption("🎵 Arquivo 'musica67.mp3' não encontrado.")
 
-# Botão principal de clique (Não sofre com o delay da loja!)
+# Botão principal de clique
 if st.button("            Click Here          ", use_container_width=True):
     st.session_state.pontos += st.session_state.poder_clique
     salvar_jogo()
@@ -118,7 +138,6 @@ with col3:
     st.write("Manoel G: 15% (+10 Pontos)")
     
     custo_ovo1 = 100
-    # REMOVIDO: O ovo 1 não se desativa mais por bloqueio de progresso externo
     desativar_ovo1 = st.session_state.pontos < custo_ovo1 or loja_em_cooldown
     
     if st.button(f"Abrir Ovo = {custo_ovo1} Pontos", disabled=desativar_ovo1, key="botao_ovo1"):
@@ -141,7 +160,7 @@ with col3:
         pet = st.session_state.pet_slot_1
         st.write("**Pet Equipado:**")
         try:
-            st.image(pet["arquivo"], width=188)
+            st.image(pet["arquivo"], width=150)
         except Exception:
             st.warning(f"⚠️ Imagem ({pet['arquivo']}) não encontrada.")
         st.caption(f"{pet['nome']} ({pet['chance']}) | +{pet['bonus']} por clique")
@@ -159,9 +178,6 @@ with col4:
         st.session_state.ultima_compra = time.time()
         if st.session_state.pontos >= custo_ovo2:
             st.session_state.pontos -= custo_ovo2
-            
-            # REMOVIDO: Linha que travava o ovo 1 ao comprar o ovo 2 foi excluída daqui
-            
             sorteado_ovo2 = random.choices(
                [{"nome": "Dora A.", "arquivo": "logo4.png", "bonus": 10, "chance": "50%"}, 
                 {"nome": "Sonic", "arquivo": "logo5.png", "bonus": 50, "chance": "35%"},
@@ -178,7 +194,7 @@ with col4:
         pet = st.session_state.pet_slot_2
         st.write("**Pet Equipado:**")
         try:
-            st.image(pet["arquivo"], width=100)
+            st.image(pet["arquivo"], width=150)
         except Exception:
             st.warning(f"⚠️ Imagem ({pet['arquivo']}) não encontrada.")
         st.caption(f"{pet['nome']} ({pet['chance']}) | +{pet['bonus']} por clique")
@@ -242,10 +258,34 @@ st.write("(1.1.2) - Adição dos Ovos, correção de bugs e preços balanceados"
 st.write("(1.2.3) - Adição de novos pets e ovos e o log de atualizações")
 st.write("(1.3.4) - Interface reformulada e correção de bugs")
 st.write("(1.4.5) - Sistema de salvamento de jogo, adição de novos autoclickers, adição de um botão de reset e correção de bugs")
-st.write("(1.4.6) - Remoção do bloqueio do ovo comum após a compra do ovo raro e correção de bugs")
+st.write("(1.4.9) - Adicionado o Placar de Líderes (Tabela de Classificação)")
+
+# 7. NOVO: TABELA DE CLASSIFICAÇÃO (LEADERBOARD)
+st.markdown("---")
+st.subheader("🏆 Tabela de Classificação (Top 5)")
+
+# Enviar pontuação atual para o placar
+with st.get_container():
+    nome_jogador = st.text_input("Digite seu nome para salvar seu recorde:", max_chars=15, key="nome_leaderboard")
+    if st.button("Enviar Pontuação para o Placar", use_container_width=True):
+        if nome_jogador.strip() != "":
+            salvar_no_leaderboard(nome_jogador.strip(), st.session_state.pontos)
+            st.success(f"Recorde de {st.session_state.pontos} pontos enviado!")
+            time.sleep(0.5)
+            st.rerun()
+        else:
+            st.error("Por favor, digite um nome antes de enviar.")
+
+# Exibir a tabela
+dados_placar = carregar_leaderboard()
+if dados_placar:
+    # Mostra os dados formatados em uma tabela bonita do Streamlit
+    st.table(dados_placar)
+else:
+    st.info("O placar está vazio. Seja o primeiro a registrar um recorde!")
 
 
-# 7. SISTEMA DE RECONSTRUÇÃO/RESET DE JOGO
+# 8. SISTEMA DE RECONSTRUÇÃO/RESET DE JOGO
 st.markdown("---")
 if not st.session_state.confirmando_reset:
     if st.button("Resetar Jogo", use_container_width=True):
