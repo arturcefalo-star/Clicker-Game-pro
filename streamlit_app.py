@@ -18,7 +18,7 @@ def salvar_jogo():
         "pet_slot_1": st.session_state.pet_slot_1,
         "pet_slot_2": st.session_state.pet_slot_2,
         "ultimo_tick": st.session_state.ultimo_tick,
-        "ja_enviou": st.session_state.ja_enviou  # Salva o estado do envio
+        "ja_enviou": st.session_state.ja_enviou
     }
     with open(SAVE_FILE, "w", encoding="utf-8") as f:
         json.dump(dados, f, ensure_ascii=False, indent=4)
@@ -32,12 +32,32 @@ def carregar_jogo():
             return None
     return None
 
-# Funções do Placar de Líderes (Leaderboard)
+# Funções do Placar de Líderes (Leaderboard) - AGORA COM LIMPEZA AUTOMÁTICA
 def carregar_leaderboard():
     if os.path.exists(LEADERBOARD_FILE):
         try:
             with open(LEADERBOARD_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+                dados = json.load(f)
+            
+            # --- SISTEMA ANTIDUPLICIDADE AUTOMÁTICO ---
+            usuarios_unicos = {}
+            for jogador in dados:
+                nome = jogador["Jogador"]
+                # Pega a chave correta (caso mude de maiúscula/minúscula)
+                pontos = jogador.get("Pontos", jogador.get("Points", 0))
+                
+                # Se o jogador não estiver no dicionário ou se essa pontuação for maior, guarda ela
+                if nome.lower() not in usuarios_unicos or pontos > usuarios_unicos[nome.lower()]["Pontos"]:
+                    usuarios_unicos[nome.lower()] = {"Jogador": nome, "Pontos": pontos}
+            
+            # Reconverte o dicionário limpo em uma lista ordenada
+            leaderboard_limpo = sorted(usuarios_unicos.values(), key=lambda x: x["Pontos"], reverse=True)[:5]
+            
+            # Salva de volta o arquivo já corrigido e sem repetições
+            with open(LEADERBOARD_FILE, "w", encoding="utf-8") as f:
+                json.dump(leaderboard_limpo, f, ensure_ascii=False, indent=4)
+                
+            return leaderboard_limpo
         except Exception:
             return []
     return []
@@ -45,12 +65,11 @@ def carregar_leaderboard():
 def salvar_no_leaderboard(nome, pontos):
     leaderboard = carregar_leaderboard()
     
-    # Procura se o jogador já existe na tabela
     jogador_encontrado = False
     for jogador in leaderboard:
         if jogador["Jogador"].lower() == nome.lower():
             jogador_encontrado = True
-            if pontos > jogador["Points" if "Points" in jogador else "Pontos"]:
+            if pontos > jogador["Pontos"]:
                 jogador["Pontos"] = pontos
                 jogador["Jogador"] = nome 
             break
@@ -272,13 +291,15 @@ st.write("(1.1.2) - Adição dos Ovos, correção de bugs e preços balanceados"
 st.write("(1.2.3) - Adição de novos pets e ovos e o log de atualizações")
 st.write("(1.3.4) - Interface reformulada e correção de bugs")
 st.write("(1.4.5) - Sistema de salvamento de jogo, adição de novos autoclickers, adição de um botão de reset e correção de bugs")
-st.write("(1.5.2) - Bloqueio de envio único para o placar de classificação")
+st.write("(1.5.5) - Adicionado sistema de filtragem de nomes antigos duplicados no placar")
 
 # 7. TABELA DE CLASSIFICAÇÃO (LEADERBOARD)
 st.markdown("---")
 st.subheader("🏆 Tabela de Classificação (Top 5)")
 
-# Enviar pontuação atual para o placar (Desativa o campo se já tiver enviado)
+# Carrega os dados (e limpa automaticamente os nomes repetidos se existirem)
+dados_placar = carregar_leaderboard()
+
 nome_jogador = st.text_input(
     "Digite seu nome para salvar seu recorde:", 
     max_chars=15, 
@@ -286,13 +307,12 @@ nome_jogador = st.text_input(
     disabled=st.session_state.ja_enviou
 )
 
-# O botão de enviar fica desabilitado se a pessoa já usou ou se o campo estiver vazio
 botao_desativado = st.session_state.ja_enviou or nome_jogador.strip() == ""
 
 if st.button("Enviar Pontuação para o Placar", use_container_width=True, disabled=botao_desativado):
-    st.session_state.ja_enviou = True  # Ativa o bloqueio permanente
+    st.session_state.ja_enviou = True  
     salvar_no_leaderboard(nome_jogador.strip(), st.session_state.pontos)
-    salvar_jogo()  # Salva o bloqueio no arquivo savegame.json
+    salvar_jogo()  
     st.success(f"Recorde de {st.session_state.pontos} pontos enviado com sucesso!")
     time.sleep(0.5)
     st.rerun()
@@ -300,8 +320,7 @@ if st.button("Enviar Pontuação para o Placar", use_container_width=True, disab
 if st.session_state.ja_enviou:
     st.info("🔒 Você já enviou sua pontuação nesta rodada. Caso queira mandar uma nova pontuação mais alta, você precisará resetar o jogo.")
 
-# Exibir a tabela
-dados_placar = carregar_leaderboard()
+# Exibir a tabela corrigida
 if dados_placar:
     st.table(dados_placar)
 else:
@@ -330,7 +349,7 @@ else:
             st.session_state.pet_slot_1 = None
             st.session_state.pet_slot_2 = None
             st.session_state.ultimo_tick = time.time()
-            st.session_state.ja_enviou = False  # Libera o placar após o reset completo
+            st.session_state.ja_enviou = False  
             st.session_state.confirmando_reset = False
             atualizar_poder_clique()
             st.success("Jogo reiniciado com sucesso!")
@@ -341,3 +360,4 @@ else:
         if st.button("NÃO, voltar ao jogo", use_container_width=True):
             st.session_state.confirmando_reset = False
             st.rerun()
+                
