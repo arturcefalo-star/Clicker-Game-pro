@@ -23,7 +23,9 @@ def salvar_jogo():
         "pet_slot_2": st.session_state.pet_slot_2,
         "ultimo_tick": st.session_state.ultimo_tick,
         "ja_enviou": st.session_state.ja_enviou,
-        "nome_usuario": st.session_state.nome_usuario
+        "nome_usuario": st.session_state.nome_usuario,
+        "mundo_2_desbloqueado": st.session_state.mundo_2_desbloqueado,
+        "mundo_atual": st.session_state.mundo_atual
     }
     with open(SAVE_FILE, "w", encoding="utf-8") as f:
         json.dump(dados, f, ensure_ascii=False, indent=4)
@@ -115,6 +117,12 @@ if "ja_enviou" not in st.session_state:
 if "nome_usuario" not in st.session_state:
     st.session_state.nome_usuario = dados_salvos.get("nome_usuario", "")
 
+# Novas variáveis para o Novo Mundo
+if "mundo_2_desbloqueado" not in st.session_state:
+    st.session_state.mundo_2_desbloqueado = dados_salvos.get("mundo_2_desbloqueado", False)
+if "mundo_atual" not in st.session_state:
+    st.session_state.mundo_atual = dados_salvos.get("mundo_atual", 1)
+
 if "ultima_compra" not in st.session_state:
     st.session_state.ultima_compra = 0.0
 if "confirmando_reset" not in st.session_state:
@@ -125,7 +133,6 @@ if "pet_slot_1" not in st.session_state:
 if "pet_slot_2" not in st.session_state:
     st.session_state.pet_slot_2 = dados_salvos.get("pet_slot_2", None)
 
-# Memória para verificar se o Admin alterou os pontos
 if "pontos_leaderboard_cache" not in st.session_state:
     st.session_state.pontos_leaderboard_cache = -1
 
@@ -148,11 +155,9 @@ if st.session_state.nome_usuario != "" and os.path.exists(LEADERBOARD_FILE):
             if j["Jogador"].lower() == st.session_state.nome_usuario.lower():
                 pontos_lb = j["Pontos"]
                 
-                # Se for a primeira leitura, apenas grava o cache
                 if st.session_state.pontos_leaderboard_cache == -1:
                     st.session_state.pontos_leaderboard_cache = pontos_lb
                 
-                # Se o valor do Leaderboard mudou por fora (Admin alterou)
                 elif pontos_lb != st.session_state.pontos_leaderboard_cache:
                     diferenca = pontos_lb - st.session_state.pontos_leaderboard_cache
                     st.session_state.pontos += diferenca
@@ -227,159 +232,217 @@ with st.sidebar:
         elif senha_input != "":
             st.error("Senha incorreta!")
 
-# --- 5. INTERFACE PRINCIPAL DO JOGO ---
+# --- 5. CONTROLE DE VIAJEM ENTRE MUNDOS ---
 st.title("Clicker Game")
 
-st.write("Trilha sonora: on/off ")
-try:
-    st.audio("musica67.mp3")
-except Exception:
-    st.caption("🎵 Arquivo 'musica67.mp3' não encontrado.")
+# Gerenciador visual de mundos
+CUSTO_MUNDO_2 = 10000000
 
-if st.button("            Click Here          ", use_container_width=True):
-    st.session_state.pontos += st.session_state.poder_clique
-    salvar_jogo()
-
-st.metric(label="Pontos Atuais", value=st.session_state.pontos)
-col_status1, col_status2 = st.columns(2)
-col_status1.write(f"**Poder de clique:** {st.session_state.poder_clique}")
-col_status2.write(f"**Pontos por segundo:** {st.session_state.pontos_por_segundo}")
+st.markdown("### 🪐 Sistema de Viagem Espacial")
+if not st.session_state.mundo_2_desbloqueado:
+    desativar_compra_mundo = st.session_state.pontos < CUSTO_MUNDO_2
+    if st.button(f"🚀 Comprar Acesso ao Segundo Mundo (Custo: {CUSTO_MUNDO_2:,} Pts)", disabled=desativar_compra_mundo, use_container_width=True):
+        st.session_state.pontos -= CUSTO_MUNDO_2
+        st.session_state.mundo_2_desbloqueado = True
+        st.session_state.mundo_atual = 2
+        salvar_jogo()
+        st.success("🌌 Segundo Mundo Desbloqueado com sucesso! Viajando...")
+        time.sleep(1)
+        st.rerun()
+else:
+    if st.session_state.mundo_atual == 1:
+        if st.button("🌀 Teletransportar para o Segundo Mundo", type="primary", use_container_width=True):
+            st.session_state.mundo_atual = 2
+            salvar_jogo()
+            st.rerun()
+    else:
+        if st.button("🌍 Voltar para o Primeiro Mundo (Terra)", type="secondary", use_container_width=True):
+            st.session_state.mundo_atual = 1
+            salvar_jogo()
+            st.rerun()
 
 st.markdown("---")
 
-# --- 6. SISTEMA DE OVOS (PETS) ---
-st.subheader("Comprar Ovos:")
-col3, col4 = st.columns(2)
+# --- CONTEÚDO DINÂMICO DEPENDENDO DO MUNDO ATUAL ---
 
-with col3:
-    st.write("### Ovo Comum:")
-    st.write("Siruriru: 50% (+1 Ponto)")
-    st.write("Peppa Pig: 35% (+5 Pontos)")
-    st.write("Manoel G: 15% (+10 Pontos)")
+if st.session_state.mundo_atual == 2:
+    # -------------------------------------------------------------
+    # 🌌 INTERFACE DO SEGUNDO MUNDO
+    # -------------------------------------------------------------
+    st.subheader("🌌 Você está no Segundo Mundo (Cyber Espaço)")
+    st.info("💡 Neste mundo alienígena, a atmosfera potencializa seus cliques! Seus cliques rendem o DOBRO do valor padrão!")
     
-    custo_ovo1 = 100
-    desativar_ovo1 = st.session_state.pontos < custo_ovo1 or loja_em_cooldown
+    st.write("Trilha sonora espacial: on/off ")
+    try:
+        st.audio("musica67.mp3") # Pode mudar para outro arquivo se quiser trilhas diferentes por mundo
+    except Exception:
+        pass
+
+    # Botão de Clique do Mundo 2 (Ganha o DOBRO do poder de clique)
+    if st.button("✨ ⚡ CLIQUE QUÂNTICO AQUI ⚡ ✨", use_container_width=True):
+        st.session_state.pontos += (st.session_state.poder_clique * 2)
+        salvar_jogo()
+
+    st.metric(label="Pontos Atuais", value=st.session_state.pontos)
     
-    if st.button(f"Abrir Ovo = {custo_ovo1} Pontos", disabled=desativar_ovo1, key="botao_ovo1"):
-        st.session_state.ultima_compra = time.time()  
-        if st.session_state.pontos >= custo_ovo1:
-            st.session_state.pontos -= custo_ovo1
-            sorteado_ovo1 = random.choices(
-               [{"nome": "Siruriru", "arquivo": "logo3.png", "bonus": 1, "chance": "50%"}, 
-                {"nome": "Peppa Pig", "arquivo": "logo2.png", "bonus": 5, "chance": "35%"},
-                {"nome": "Manoel G", "arquivo": "logo1.png", "bonus": 10, "chance": "15%"}],
-               weights=[50, 35, 15], k=1
-            )[0]
-            st.session_state.pet_slot_1 = sorteado_ovo1
-            atualizar_poder_clique()
-            salvar_jogo()
-            time.sleep(0.5) 
-            st.rerun()
+    col_status1, col_status2 = st.columns(2)
+    col_status1.write(f"**Poder de clique local:** {st.session_state.poder_clique * 2} (Bônus de Mundo!)")
+    col_status2.write(f"**Pontos por segundo passivos:** {st.session_state.pontos_por_segundo}")
 
-    if st.session_state.pet_slot_1:
-        pet = st.session_state.pet_slot_1
-        st.write("**Pet Equipado:**")
-        try:
-            st.image(pet["arquivo"], width=188)
-        except Exception:
-            st.warning(f"⚠️ Imagem ({pet['arquivo']}) não encontrada.")
-        st.caption(f"{pet['nome']} ({pet['chance']}) | +{pet['bonus']} por clique")
+    st.warning("🪐 As lojas e chocadores de ovos ficaram para trás no Primeiro Mundo. Use os portais de viagem acima para gerenciar seus negócios!")
 
-with col4:
-    st.write("### Ovo Raro:")
-    st.write("Dora A.: 50% (+10 Pontos)")
-    st.write("Sonic: 35% (+50 Pontos)")
-    st.write("Michael J.: 15% (+100 Pontos)")
+else:
+    # -------------------------------------------------------------
+    # 🌍 INTERFACE DO PRIMEIRO MUNDO (CONTEÚDO ORIGINAL DO SEU JOGO)
+    # -------------------------------------------------------------
+    st.subheader("🌍 Você está no Primeiro Mundo (Terra)")
     
-    custo_ovo2 = 1000
-    desativar_ovo2 = st.session_state.pontos < custo_ovo2 or loja_em_cooldown
-    
-    if st.button(f"Abrir Ovo = {custo_ovo2} Pontos", disabled=desativar_ovo2, key="botao_ovo2"):
-        st.session_state.ultima_compra = time.time()
-        if st.session_state.pontos >= custo_ovo2:
-            st.session_state.pontos -= custo_ovo2
-            sorteado_ovo2 = random.choices(
-               [{"nome": "Dora A.", "arquivo": "logo4.png", "bonus": 10, "chance": "50%"}, 
-                {"nome": "Sonic", "arquivo": "logo5.png", "bonus": 50, "chance": "35%"},
-                {"nome": "Michael J.", "arquivo": "logo6.png", "bonus": 100, "chance": "15%"}],
-               weights=[50, 35, 15], k=1
-            )[0]
-            st.session_state.pet_slot_2 = sorteado_ovo2
-            atualizar_poder_clique()
-            salvar_jogo()
-            time.sleep(0.5) 
-            st.rerun()
+    st.write("Trilha sonora: on/off ")
+    try:
+        st.audio("musica67.mp3")
+    except Exception:
+        st.caption("🎵 Arquivo 'musica67.mp3' não encontrado.")
 
-    if st.session_state.pet_slot_2:
-        pet = st.session_state.pet_slot_2
-        st.write("**Pet Equipado:**")
-        try:
-            st.image(pet["arquivo"], width=100)
-        except Exception:
-            st.warning(f"⚠️ Imagem ({pet['arquivo']}) não encontrada.")
-        st.caption(f"{pet['nome']} ({pet['chance']}) | +{pet['bonus']} por clique")
+    if st.button("            Click Here          ", use_container_width=True):
+        st.session_state.pontos += st.session_state.poder_clique
+        salvar_jogo()
 
-st.markdown("---")
+    st.metric(label="Pontos Atuais", value=st.session_state.pontos)
+    col_status1, col_status2 = st.columns(2)
+    col_status1.write(f"**Poder de clique:** {st.session_state.poder_clique}")
+    col_status2.write(f"**Pontos por segundo:** {st.session_state.pontos_por_segundo}")
 
-# --- 7. LOJA DE MELHORIAS ---
-col1, col2 = st.columns(2)
+    st.markdown("---")
 
-melhorias_clique = [
-    {"qtd": 1, "custo": 100}, {"qtd": 5, "custo": 500}, {"qtd": 10, "custo": 1000},
-    {"qtd": 50, "custo": 5000}, {"qtd": 100, "custo": 10000}, {"qtd": 500, "custo": 50000},
-    {"qtd": 1000, "custo": 100000}, {"qtd": 2500, "custo": 250000}, {"qtd": 5000, "custo": 500000},
-    {"qtd": 10000, "custo": 1000000},
-]
+    # --- 6. SISTEMA DE OVOS (PETS) ---
+    st.subheader("Comprar Ovos:")
+    col3, col4 = st.columns(2)
 
-melhorias_passivas = [
-    {"qtd": 5, "custo": 200}, {"qtd": 10, "custo": 600}, {"qtd": 20, "custo": 1100},
-    {"qtd": 100, "custo": 7500}, {"qtd": 200, "custo": 14500}, {"qtd": 1000, "custo": 72500},
-    {"qtd": 2000, "custo": 145000}, {"qtd": 5000, "custo": 360000}, {"qtd": 10000, "custo": 725000},
-    {"qtd": 20000, "custo": 1450000},
-]
-
-with col1:
-    st.subheader("Melhoria Clicker")
-    for item in melhorias_clique:
-        texto = f"Melhoria +{item['qtd']} = {item['custo']} Pts"
-        desativado = st.session_state.pontos < item['custo'] or loja_em_cooldown
-
-        if st.button(texto, key=f"clique_{item['qtd']}", disabled=desativado, use_container_width=True):
-            st.session_state.ultima_compra = time.time()
-            if st.session_state.pontos >= item['custo']: 
-                st.session_state.pontos -= item['custo']
-                st.session_state.poder_base += item['qtd']
-                atualizar_poder_clique()  
+    with col3:
+        st.write("### Ovo Comum:")
+        st.write("Siruriru: 50% (+1 Ponto)")
+        st.write("Peppa Pig: 35% (+5 Pontos)")
+        st.write("Manoel G: 15% (+10 Pontos)")
+        
+        custo_ovo1 = 100
+        desativar_ovo1 = st.session_state.pontos < custo_ovo1 or loja_em_cooldown
+        
+        if st.button(f"Abrir Ovo = {custo_ovo1} Pontos", disabled=desativar_ovo1, key="botao_ovo1"):
+            st.session_state.ultima_compra = time.time()  
+            if st.session_state.pontos >= custo_ovo1:
+                st.session_state.pontos -= custo_ovo1
+                sorteado_ovo1 = random.choices(
+                   [{"nome": "Siruriru", "arquivo": "logo3.png", "bonus": 1, "chance": "50%"}, 
+                    {"nome": "Peppa Pig", "arquivo": "logo2.png", "bonus": 5, "chance": "35%"},
+                    {"nome": "Manoel G", "arquivo": "logo1.png", "bonus": 10, "chance": "15%"}],
+                   weights=[50, 35, 15], k=1
+                )[0]
+                st.session_state.pet_slot_1 = sorteado_ovo1
+                atualizar_poder_clique()
                 salvar_jogo()
                 time.sleep(0.5) 
                 st.rerun()
 
-with col2:
-    st.subheader("Auto Clickers")
-    for item in melhorias_passivas:
-        texto = f"Gerador +{item['qtd']}/s = {item['custo']} Pts"
-        desativado = st.session_state.pontos < item['custo'] or loja_em_cooldown
+        if st.session_state.pet_slot_1:
+            pet = st.session_state.pet_slot_1
+            st.write("**Pet Equipado:**")
+            try:
+                st.image(pet["arquivo"], width=188)
+            except Exception:
+                st.warning(f"⚠️ Imagem ({pet['arquivo']}) não encontrada.")
+            st.caption(f"{pet['nome']} ({pet['chance']}) | +{pet['bonus']} por clique")
 
-        if st.button(texto, key=f"passivo_{item['qtd']}", disabled=desativado, use_container_width=True):
+    with col4:
+        st.write("### Ovo Raro:")
+        st.write("Dora A.: 50% (+10 Pontos)")
+        st.write("Sonic: 35% (+50 Pontos)")
+        st.write("Michael J.: 15% (+100 Pontos)")
+        
+        custo_ovo2 = 1000
+        desativar_ovo2 = st.session_state.pontos < custo_ovo2 or loja_em_cooldown
+        
+        if st.button(f"Abrir Ovo = {custo_ovo2} Pontos", disabled=desativar_ovo2, key="botao_ovo2"):
             st.session_state.ultima_compra = time.time()
-            if st.session_state.pontos >= item['custo']: 
-                st.session_state.pontos -= item['custo']
-                st.session_state.pontos_por_segundo += item['qtd']
+            if st.session_state.pontos >= custo_ovo2:
+                st.session_state.pontos -= custo_ovo2
+                sorteado_ovo2 = random.choices(
+                   [{"nome": "Dora A.", "arquivo": "logo4.png", "bonus": 10, "chance": "50%"}, 
+                    {"nome": "Sonic", "arquivo": "logo5.png", "bonus": 50, "chance": "35%"},
+                    {"nome": "Michael J.", "arquivo": "logo6.png", "bonus": 100, "chance": "15%"}],
+                   weights=[50, 35, 15], k=1
+                )[0]
+                st.session_state.pet_slot_2 = sorteado_ovo2
+                atualizar_poder_clique()
                 salvar_jogo()
                 time.sleep(0.5) 
                 st.rerun()
+
+        if st.session_state.pet_slot_2:
+            pet = st.session_state.pet_slot_2
+            st.write("**Pet Equipado:**")
+            try:
+                st.image(pet["arquivo"], width=100)
+            except Exception:
+                st.warning(f"⚠️ Imagem ({pet['arquivo']}) não encontrada.")
+            st.caption(f"{pet['nome']} ({pet['chance']}) | +{pet['bonus']} por clique")
+
+    st.markdown("---")
+
+    # --- 7. LOJA DE MELHORIAS ---
+    col1, col2 = st.columns(2)
+
+    melhorias_clique = [
+        {"qtd": 1, "custo": 100}, {"qtd": 5, "custo": 500}, {"qtd": 10, "custo": 1000},
+        {"qtd": 50, "custo": 5000}, {"qtd": 100, "custo": 10000}, {"qtd": 500, "custo": 50000},
+        {"qtd": 1000, "custo": 100000}, {"qtd": 2500, "custo": 250000}, {"qtd": 5000, "custo": 500000},
+        {"qtd": 10000, "custo": 1000000},
+    ]
+
+    melhorias_passivas = [
+        {"qtd": 5, "custo": 200}, {"qtd": 10, "custo": 600}, {"qtd": 20, "custo": 1100},
+        {"qtd": 100, "custo": 7500}, {"qtd": 200, "custo": 14500}, {"qtd": 1000, "custo": 72500},
+        {"qtd": 2000, "custo": 145000}, {"qtd": 5000, "custo": 360000}, {"qtd": 10000, "custo": 725000},
+        {"qtd": 20000, "custo": 1450000},
+    ]
+
+    with col1:
+        st.subheader("Melhoria Clicker")
+        for item in melhorias_clique:
+            texto = f"Melhoria +{item['qtd']} = {item['custo']} Pts"
+            desativado = st.session_state.pontos < item['custo'] or loja_em_cooldown
+
+            if st.button(texto, key=f"clique_{item['qtd']}", disabled=desativado, use_container_width=True):
+                st.session_state.ultima_compra = time.time()
+                if st.session_state.pontos >= item['custo']: 
+                    st.session_state.pontos -= item['custo']
+                    st.session_state.poder_base += item['qtd']
+                    atualizar_poder_clique()  
+                    salvar_jogo()
+                    time.sleep(0.5) 
+                    st.rerun()
+
+    with col2:
+        st.subheader("Auto Clickers")
+        for item in melhorias_passivas:
+            texto = f"Gerador +{item['qtd']}/s = {item['custo']} Pts"
+            desativado = st.session_state.pontos < item['custo'] or loja_em_cooldown
+
+            if st.button(texto, key=f"passivo_{item['qtd']}", disabled=desativado, use_container_width=True):
+                st.session_state.ultima_compra = time.time()
+                if st.session_state.pontos >= item['custo']: 
+                    st.session_state.pontos -= item['custo']
+                    st.session_state.pontos_por_segundo += item['qtd']
+                    salvar_jogo()
+                    time.sleep(0.5) 
+                    st.rerun()
+
+# --- ABAIXO DOS MUNDOS: COMPONENTES GLOBAIS (RANKING E LOGS) ---
 
 # --- 8. LOG DE ATUALIZAÇÕES ---
 st.markdown("---")
 st.subheader("Atualizações:")
 st.write("(1.0.0)(Beta) - Lançamento!!!")
-st.write("(1.0.1) - Correção de bugs")
-st.write("(1.1.2) - Adição dos Ovos, correção de bugs e preços balanceados")
-st.write("(1.2.3) - Adição de novos pets e ovos e o log de atualizações")
-st.write("(1.3.4) - Interface reformulada e correção de bugs")
-st.write("(1.4.5) - Sistema de salvamento de jogo, adição de novos autoclickers, adição de um botão de reset e correção de bugs")
-st.write("(1.5.6) - Adição do top global (Coloque seu nome na barrinha e clique em enviar e clique novamente para atualizar)")
-st.write("(1.6.7) - Adição do painel de adimin com senha e correção de bugs")
+st.write("(1.7.0) - 🌌 DESBLOQUEIO DO SEGUNDO MUNDO! Novo portal de teletransporte e bônus quântico de cliques por 10M de pontos!")
 
 # --- 9. TABELA DE CLASSIFICAÇÃO COM VALIDAÇÃO DE UNICIDADE ---
 st.markdown("---")
@@ -423,8 +486,6 @@ if st.button("Enviar Pontuação para o Placar", use_container_width=True, disab
         
         st.session_state.nome_usuario = nome_novo
         st.session_state.ja_enviou = True  
-        
-        # Sincroniza o cache do admin para não reverter na próxima leitura
         st.session_state.pontos_leaderboard_cache = st.session_state.pontos 
         
         dados_placar = salvar_no_leaderboard(nome_novo, st.session_state.pontos)
@@ -445,7 +506,7 @@ if not st.session_state.confirmando_reset:
         st.session_state.confirmando_reset = True
         st.rerun()
 else:
-    st.warning("⚠️ **Você tem certeza absoluta?** Isso apagará permanentemente todos os seus pontos, melhorias e pets salvos!")
+    st.warning("⚠️ **Você tem certeza absoluta?** Isso apagará permanentemente todos os seus pontos, melhorias, mundos e pets salvos!")
     col_sim, col_nao = st.columns(2)
     
     with col_sim:
@@ -464,11 +525,13 @@ else:
             st.session_state.ultimo_tick = time.time()
             st.session_state.ja_enviou = False  
             st.session_state.nome_usuario = ""
+            st.session_state.mundo_2_desbloqueado = False
+            st.session_state.mundo_atual = 1
             st.session_state.pontos_leaderboard_cache = -1
             st.session_state.confirmando_reset = False
             
             atualizar_poder_clique()
-            st.success("Jogo reiniciado com sucesso! Seu recorde anterior foi removido, mas os outros jogadores continuam salvos.")
+            st.success("Jogo reiniciado com sucesso!")
             time.sleep(0.5)
             st.rerun()
             
