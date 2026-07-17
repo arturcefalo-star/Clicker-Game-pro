@@ -18,10 +18,9 @@ BONUS_PET_8 = 15000
 NOME_PET_9 = "Saitama Careca"  # Logo 9
 BONUS_PET_9 = 50000
 
-CUSTO_OVO_M2_BARATO = 500000   # Custo do primeiro ovo do Mundo 2
+CUSTO_OVO_MUNDO_2_BARATO = 500000   # Custo do primeiro ovo do Mundo 2
 
 # --- OVO CÓSMICO 2 (Mais caro/raro) ---
-# Você pode alterar esses nomes fictícios ou apontar para outros arquivos de imagem!
 NOME_PET_M2_R1 = "Billz Deus"
 BONUS_PET_M2_R1 = 100000
 
@@ -31,7 +30,7 @@ BONUS_PET_M2_R2 = 500000
 NOME_PET_M2_R3 = "Zen-Oh"
 BONUS_PET_M2_R3 = 2000000
 
-CUSTO_OVO_M2_CARO = 5000000   # Custo do segundo ovo do Mundo 2
+CUSTO_OVO_MUNDO_2_CARO = 5000000   # Custo do segundo ovo do Mundo 2
 # =====================================================================
 
 # --- CONFIGURAÇÕES DE ADMIN ---
