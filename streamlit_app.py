@@ -361,9 +361,14 @@ with col2:
 st.markdown("---")
 st.subheader("Atualizações:")
 st.write("(1.0.0)(Beta) - Lançamento!!!")
-st.write("(1.4.5) - Salvamento de jogo, autoclickers e botão de reset")
-st.write("(2.1.0) - Sincronização em Tempo Real: Pontos adicionados pelo Admin agora vão direto para a carteira do jogador!")
-         
+st.write("(1.0.1) - Correção de bugs")
+st.write("(1.1.2) - Adição dos Ovos, correção de bugs e preços balanceados")
+st.write("(1.2.3) - Adição de novos pets e ovos e o log de atualizações")
+st.write("(1.3.4) - Interface reformulada e correção de bugs")
+st.write("(1.4.5) - Sistema de salvamento de jogo, adição de novos autoclickers, adição de um botão de reset e correção de bugs")
+st.write("(1.5.6) - Adição do top global (Coloque seu nome na barrinha e clique em enviar e clique novamente para atualizar)")
+st.write("(1.6.7) - Adição do painel de adimin com senha e correção de bugs")
+
 # --- 9. TABELA DE CLASSIFICAÇÃO COM VALIDAÇÃO DE UNICIDADE ---
 st.markdown("---")
 st.subheader("Top 5 global:")
