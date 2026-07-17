@@ -684,7 +684,7 @@ st.write("(2.1.1) - Sistema de salvamento de top global em tempo real, correçã
 
 # --- 🏆 TABELA DE CLASSIFICAÇÃO GLOBAL (ATUALIZADA AUTOMATICAMENTE) ---
 st.markdown("---")
-st.subheader("🏆 Top 5 Global (Tempo Real):")
+st.subheader("Top Global:")
 dados_placar = carregar_leaderboard()
 
 if dados_placar:
