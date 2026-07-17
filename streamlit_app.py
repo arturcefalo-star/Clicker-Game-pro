@@ -55,21 +55,21 @@ def salvar_progresso_atual():
         usuarios = carregar_todos_usuarios()
         username_key = st.session_state.nome_usuario.lower()
         
-        usuarios[username_key]["dados"] = {
-            "pontos": st.session_state.pontos,
-            "poder_base": st.session_state.poder_base,
-            "pontos_por_segundo": st.session_state.pontos_por_segundo,
-            "pet_slot_1": st.session_state.pet_slot_1,
-            "pet_slot_2": st.session_state.pet_slot_2,
-            "pet_slot_m2_1": st.session_state.pet_slot_m2_1,
-            "pet_slot_m2_2": st.session_state.pet_slot_m2_2,
-            "ultimo_tick": st.session_state.ultimo_tick,
-            "mundo_2_desbloqueado": st.session_state.mundo_2_desbloqueado,
-            "mundo_atual": st.session_state.mundo_atual
-        }
-        salvar_todos_usuarios(usuarios)
-        # Sincroniza automaticamente com o Top Global ao salvar
-        atualizar_no_leaderboard(st.session_state.nome_usuario, st.session_state.pontos)
+        if username_key in usuarios:
+            usuarios[username_key]["dados"] = {
+                "pontos": st.session_state.pontos,
+                "poder_base": st.session_state.poder_base,
+                "pontos_por_segundo": st.session_state.pontos_por_segundo,
+                "pet_slot_1": st.session_state.pet_slot_1,
+                "pet_slot_2": st.session_state.pet_slot_2,
+                "pet_slot_m2_1": st.session_state.pet_slot_m2_1,
+                "pet_slot_m2_2": st.session_state.pet_slot_m2_2,
+                "ultimo_tick": st.session_state.ultimo_tick,
+                "mundo_2_desbloqueado": st.session_state.mundo_2_desbloqueado,
+                "mundo_atual": st.session_state.mundo_atual
+            }
+            salvar_todos_usuarios(usuarios)
+            atualizar_no_leaderboard(st.session_state.nome_usuario, st.session_state.pontos)
 
 def carregar_leaderboard():
     if os.path.exists(LEADERBOARD_FILE):
@@ -107,7 +107,7 @@ def atualizar_no_leaderboard(nome, pontos):
     for j in leaderboard:
         if j["Jogador"].lower() == nome.lower():
             encontrado = True
-            j["Pontos"] = pontos  # Atualiza em tempo real, mesmo se for menor (caso gaste pontos)
+            j["Pontos"] = pontos  
             j["Jogador"] = nome
             break
     if not encontrado:
@@ -161,6 +161,7 @@ if not st.session_state.logado:
                 st.session_state.ultimo_tick = time.time()
                 st.session_state.mundo_2_desbloqueado = dados.get("mundo_2_desbloqueado", False)
                 st.session_state.mundo_atual = dados.get("mundo_atual", 1)
+                st.session_state.pontos_leaderboard_cache = dados.get("pontos", 0)
                 
                 st.session_state.nome_usuario = usuarios[user_key]["nome_exibicao"]
                 st.session_state.logado = True
@@ -213,7 +214,7 @@ if "ultima_compra" not in st.session_state:
 if "confirmando_reset" not in st.session_state:
     st.session_state.confirmando_reset = False
 if "pontos_leaderboard_cache" not in st.session_state:
-    st.session_state.pontos_leaderboard_cache = -1
+    st.session_state.pontos_leaderboard_cache = st.session_state.pontos
 
 def atualizar_poder_clique():
     bonus_total = 0
@@ -229,8 +230,7 @@ def atualizar_poder_clique():
 
 atualizar_poder_clique()
 
-# --- REFRESH PASSIVO (AUTO-CLICKER / LOOP PRINCIPAL) ---
-# Executa a cada 900ms para capturar o tempo e renderizar o Top Global atualizado
+# --- REFRESH PASSIVO ---
 st_autorefresh(interval=900, key="global_loop")
 
 agora = time.time()
@@ -240,29 +240,20 @@ if tempo_passado >= 1.0:
     ciclos = int(tempo_passado)
     st.session_state.pontos += st.session_state.pontos_por_segundo * ciclos
     st.session_state.ultimo_tick = agora - (tempo_passado - ciclos)
-    # [AUTOSAVE ATIVADO] Salva e sincroniza o placar a cada segundo ganho passivamente
+    st.session_state.pontos_leaderboard_cache = st.session_state.pontos
     salvar_progresso_atual()
 
-# --- SINCRONIZAÇÃO DO ADMIN (ATUALIZAÇÃO DE PONTOS EM TEMPO REAL) ---
+# --- SINCRONIZAÇÃO SEGURA DO ADMIN ---
 if st.session_state.nome_usuario != "" and os.path.exists(LEADERBOARD_FILE):
     try:
         with open(LEADERBOARD_FILE, "r", encoding="utf-8") as f:
             tabela_global = json.load(f)
         for j in tabela_global:
             if j["Jogador"].lower() == st.session_state.nome_usuario.lower():
-                pontos_lb = j["Points" if "Points" in j else "Pontos"]
-                
-                if st.session_state.pontos_leaderboard_cache == -1:
+                pontos_lb = j.get("Pontos", j.get("Points", 0))
+                if pontos_lb != st.session_state.pontos_leaderboard_cache:
+                    st.session_state.pontos = pontos_lb
                     st.session_state.pontos_leaderboard_cache = pontos_lb
-                
-                elif pontos_lb != st.session_state.pontos_leaderboard_cache:
-                    diferenca = pontos_lb - st.session_state.pontos_leaderboard_cache
-                    st.session_state.pontos += diferenca
-                    if st.session_state.pontos < 0:
-                        st.session_state.pontos = 0
-                        
-                    st.session_state.pontos_leaderboard_cache = pontos_lb
-                    salvar_progresso_atual()
                 break
     except Exception:
         pass
@@ -304,19 +295,25 @@ with st.sidebar:
                     col_adm1, col_adm2, col_adm3, col_adm4 = st.columns([2, 1, 1, 1])
                     col_adm1.write(f"**{jogador['Jogador']}**: {jogador['Pontos']} pts")
                     
-                    if col_adm2.button("Ban", key=f"del_{i}", help="Deletar este jogador"):
+                    if col_adm2.button("Ban", key=f"del_{i}"):
                         placar_completo.pop(i)
                         salvar_leaderboard_completo(placar_completo)
                         st.rerun()
                     
-                    if col_adm3.button("Add", key=f"add_{i}", help=f"Adicionar +{qtd_pontos} pontos"):
+                    if col_adm3.button("Add", key=f"add_{i}"):
                         jogador['Pontos'] += qtd_pontos
                         salvar_leaderboard_completo(placar_completo)
+                        if jogador['Jogador'].lower() == st.session_state.nome_usuario.lower():
+                            st.session_state.pontos += qtd_pontos
+                            st.session_state.pontos_leaderboard_cache = st.session_state.pontos
                         st.rerun()
 
-                    if col_adm4.button("Rem", key=f"rem_{i}", help=f"Remover -{qtd_pontos} pontos"):
+                    if col_adm4.button("Rem", key=f"rem_{i}"):
                         jogador['Pontos'] = max(0, jogador['Pontos'] - qtd_pontos)
                         salvar_leaderboard_completo(placar_completo)
+                        if jogador['Jogador'].lower() == st.session_state.nome_usuario.lower():
+                            st.session_state.pontos = max(0, st.session_state.pontos - qtd_pontos)
+                            st.session_state.pontos_leaderboard_cache = st.session_state.pontos
                         st.rerun()
             else:
                 st.info("Nenhum jogador registrado no placar ainda.")
@@ -364,11 +361,11 @@ if st.session_state.mundo_atual == 2:
     except Exception:
         pass
 
-    if st.button("            Click Here          "):
-        st.session_state.points_before = st.session_state.pontos
+    if st.button("            Click Here          ", key="click_m2_btn"):
         st.session_state.pontos += (st.session_state.poder_clique * 2)
-        # [AUTOSAVE ATIVADO] Salva o clique imediatamente no arquivo e atualiza placar
+        st.session_state.pontos_leaderboard_cache = st.session_state.pontos
         salvar_progresso_atual()
+        st.rerun()
 
     st.metric(label="Pontos Atuais", value=st.session_state.pontos)
     
@@ -455,10 +452,11 @@ else:
     except Exception:
         st.caption("🎵 Arquivo 'musica67.mp3' não encontrado.")
 
-    if st.button("            Click Here          "):
+    if st.button("            Click Here          ", key="click_m1_btn"):
         st.session_state.pontos += st.session_state.poder_clique
-        # [AUTOSAVE ATIVADO] Salva o clique imediatamente no arquivo e atualiza placar
+        st.session_state.points_leaderboard_cache = st.session_state.pontos
         salvar_progresso_atual()
+        st.rerun()
 
     st.metric(label="Pontos Atuais", value=st.session_state.pontos)
     col_status1, col_status2 = st.columns(2)
@@ -586,6 +584,7 @@ with col1:
                 st.session_state.pontos -= item['custo']
                 st.session_state.poder_base += item['qtd']
                 atualizar_poder_clique()  
+                st.session_state.pontos_leaderboard_cache = st.session_state.pontos
                 salvar_progresso_atual()
                 time.sleep(0.5)
                 st.rerun()
@@ -602,6 +601,7 @@ with col2:
                 st.session_state.ultima_compra = time.time()
                 st.session_state.pontos -= item['custo']
                 st.session_state.pontos_por_segundo += item['qtd']
+                st.session_state.pontos_leaderboard_cache = st.session_state.pontos
                 salvar_progresso_atual()
                 time.sleep(0.5)
                 st.rerun()
