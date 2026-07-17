@@ -58,7 +58,7 @@ if st.button("            Click Here          ", use_container_width=True):
 # Exibição de Status
 st.metric(label="Pontos Atuais", value=st.session_state.pontos)
 col_status1, col_status2 = st.columns(2)
-col_status1.write(f"**Poder de clique:** {st.session_state.poder_clique})
+col_status1.write(f"**Poder de clique:** {st.session_state.poder_clique}")
 col_status2.write(f"**Pontos por segundo:** {st.session_state.pontos_por_segundo}")
 
 st.markdown("---")
