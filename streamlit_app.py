@@ -65,7 +65,7 @@ def salvar_progresso_atual():
                 "pet_slot_2": st.session_state.pet_slot_2,
                 "pet_slot_m2_1": st.session_state.pet_slot_m2_1,
                 "pet_slot_m2_2": st.session_state.pet_slot_m2_2,
-                "ultimo_tick": st.session_state.ultimo_tick,
+                "ultimo_tick": time.time(),
                 "mundo_2_desbloqueado": st.session_state.mundo_2_desbloqueado,
                 "mundo_atual": st.session_state.mundo_atual
             }
@@ -112,7 +112,7 @@ def atualizar_no_leaderboard(nome, pontos):
             j["Jogador"] = nome
             break
             
-    if not dream := encontrado:
+    if not encontrado:
         leaderboard.append({"Jogador": nome, "Pontos": pontos})
     
     leaderboard = sorted(leaderboard, key=lambda x: x["Pontos"], reverse=True)
@@ -639,7 +639,11 @@ if st.session_state.mundo_atual == 2:
                 st.warning(f"⚠️ Imagem ({pet['arquivo']}) não encontrada.")
             st.caption(f"{pet['nome']} ({pet['chance']}) | +{pet['bonus'] * mult_sorte:,} por clique")
 
-else:
+def get_leaderboard_data():
+    return carregar_leaderboard()
+
+# MUNDO 1 E RESTANTE DO JOGO CONTINUA IGUAL...
+if st.session_state.mundo_atual != 2:
     st.subheader("Primeiro Mundo")
     
     st.write("Trilha sonora: on/off")
@@ -701,7 +705,7 @@ else:
         st.write("### Ovo Raro:")
         st.write(f"Dora A.: 50% (+{10 * mult_sorte} Pontos)")
         st.write(f"Sonic: 35% (+{50 * mult_sorte} Pontos)")
-        st.write(f"Michael J.: 15% (+{10 * mult_sorte} Pontos)")
+        st.write(f"Michael J.: 15% (+{100 * mult_sorte} Pontos)")
         
         custo_ovo2 = 1000
         desativar_ovo2 = st.session_state.pontos < custo_ovo2 or loja_em_cooldown
@@ -829,7 +833,7 @@ st.write("(2.5.0) - Inclusão do Multiplicador Global de Sorte: Amplie o ganho d
 # --- 🏆 TABELA DE CLASSIFICAÇÃO GLOBAL ---
 st.markdown("---")
 st.subheader("Top Global:")
-dados_placar = carregar_leaderboard()
+dados_placar = get_leaderboard_data()
 
 if dados_placar:
     st.table(dados_placar)
