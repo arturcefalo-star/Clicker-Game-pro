@@ -176,7 +176,7 @@ if "logado" not in st.session_state:
 if "nome_usuario" not in st.session_state:
     st.session_state.nome_usuario = ""
 
-# --- CHECAGEM AUTOMÁTICA DE LOGIN (EXECUTA APENAS UMA VEZ NO COMPONENT LOAD) ---
+# --- CHECAGEM AUTOMÁTICA DE LOGIN ---
 if not st.session_state.logado:
     usuario_salvo = verificar_auto_login()
     if usuario_salvo:
@@ -231,7 +231,6 @@ if not st.session_state.logado:
                 st.session_state.nome_usuario = usuarios[user_key]["nome_exibicao"]
                 st.session_state.logado = True
                 
-                # Salva a sessão ativa localmente para entrar direto da próxima vez
                 salvar_sessao_ativa(user_key)
                 
                 st.success(f"Bem-vindo de volta, {st.session_state.nome_usuario}!")
@@ -373,7 +372,7 @@ with st.sidebar:
     st.write(f"Conectado como: **{st.session_state.nome_usuario}**")
     if st.button("Sair da Conta (Logout)", type="secondary"):
         salvar_progresso_atual()
-        limpar_sessao_ativa()  # Apaga os dados salvos para não logar sozinho da próxima vez
+        limpar_sessao_ativa()  
         st.session_state.logado = False
         st.session_state.nome_usuario = ""
         st.rerun()
@@ -668,7 +667,6 @@ if st.session_state.mundo_atual == 2:
     except Exception:
         pass
 
-    # CHAMADA DO FRAGMENTO ISOLADO DO MUNDO 2 (SEM PISCAR TELA)
     renderizar_area_clique()
 
     st.markdown("---")
@@ -758,7 +756,6 @@ if st.session_state.mundo_atual != 2:
     except Exception:
         st.caption("🎵 Arquivo 'musica67.mp3' não encontrado.")
 
-    # CHAMADA DO FRAGMENTO ISOLADO DO MUNDO 1 (SEM PISCAR TELA)
     renderizar_area_clique()
 
     st.markdown("---")
