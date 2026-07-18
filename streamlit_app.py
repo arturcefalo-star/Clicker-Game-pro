@@ -334,24 +334,24 @@ def calcular_chances_ovo(c1, c2, c3_base):
     c2_atual = (c2 / soma_base_comuns) * restante
     return c1_atual, c2_atual, c3_atual
 
+# Processamento passivo global de pontos baseado no tempo corrido real
+agora = time.time()
+tempo_passado = agora - st.session_state.ultimo_tick
+if tempo_passado >= 1.0:
+    ciclos = int(tempo_passado)
+    st.session_state.pontos += st.session_state.pontos_por_segundo * ciclos
+    st.session_state.ultimo_tick = agora - (tempo_passado - ciclos)
+    st.session_state.pontos_leaderboard_cache = st.session_state.pontos
+
 atualizar_poder_clique()
 
 # --- 🚀 SISTEMA ANTI-LAG DEFINITIVO COM FRAGMENTO OTIMIZADO ---
 @st.fragment
 def renderizar_area_clique():
+    # O Autorefresh atualiza apenas o fragmento numérico a cada 3s para evitar lag na página inteira
     st_autorefresh(interval=3000, key="game_click_loop")
     
-    agora = time.time()
-    tempo_passado = agora - st.session_state.ultimo_tick
-
-    if tempo_passado >= 1.0:
-        ciclos = int(tempo_passado)
-        st.session_state.pontos += st.session_state.pontos_por_segundo * ciclos
-        st.session_state.ultimo_tick = agora - (tempo_passado - ciclos)
-        st.session_state.pontos_leaderboard_cache = st.session_state.pontos
-        salvar_progresso_atual()
-
-    st.metric(label="Pontos Atuais", value=st.session_state.pontos)
+    st.metric(label="Pontos Atuais", value=f"{st.session_state.pontos:,}")
     
     if st.session_state.mundo_atual == 2:
         if st.button("            Click Here          ", key="click_m2_btn", use_container_width=True):
@@ -399,7 +399,6 @@ with st.sidebar:
     st.markdown("---")
     st.header("⚙️ Painel de Admin")
     
-    # Checkbox controlado de forma independente para evitar loops de reset
     modo_admin_chk = st.checkbox("Exibir Opções de Admin", value=st.session_state.p_admin_ativo)
     
     if not modo_admin_chk and st.session_state.p_admin_ativo:
@@ -417,13 +416,13 @@ with st.sidebar:
             st.success("Acesso Autorizado!")
             
             # =====================================================================
-            # 👁️ MONITOR DE UTILIZADORES DOS PAINÉIS (FIXED: LEITURA COMPLETA DO JSON)
+            # 👁️ MONITOR DE UTILIZADORES DOS PAINÉIS (FIXED: FILTRAGEM INDEPENDENTE)
             # =====================================================================
             st.markdown("---")
             st.subheader("👁️ Monitor de Painéis")
             db_usuarios = carregar_todos_usuarios()
-            adms_ativos = [db_usuarios[k]["nome_exibicao"] for k in db_usuarios if db_usuarios[k]["dados"].get("usando_admin", False)]
-            apoiadores_ativos = [db_usuarios[k]["nome_exibicao"] for k in db_usuarios if db_usuarios[k]["dados"].get("usando_apoiador", False)]
+            adms_ativos = [db_usuarios[k]["nome_exibicao"] for k in db_usuarios if db_usuarios[k].get("dados", {}).get("usando_admin", False)]
+            apoiadores_ativos = [db_usuarios[k]["nome_exibicao"] for k in db_usuarios if db_usuarios[k].get("dados", {}).get("usando_apoiador", False)]
             
             st.write("**Utilizadores do painel de Admin:**")
             if adms_ativos:
@@ -679,12 +678,11 @@ with st.sidebar:
             st.error("Senha incorreta!")
 
     # =====================================================================
-    # ✨ MENU DE TRAPAÇAS (FIXED: LOGIN INDEPENDENTE SEM CONFLITOS)
+    # ✨ MENU DE TRAPAÇAS (FIXED: LOGIN INDEPENDENTE E SALVAMENTO CORRETO)
     # =====================================================================
     st.markdown("---")
     st.header("⚙️ Painel de Apoiador")
     
-    # Renderiza o checkbox espelhado sem resetar o fluxo de render
     modo_apoiador_chk = st.checkbox("Exibir Opções de Apoiador", value=st.session_state.p_apoiador_ativo)
     
     if not modo_apoiador_chk and st.session_state.p_apoiador_ativo:
@@ -994,7 +992,6 @@ with col1:
                     atualizar_poder_clique()  
                     st.session_state.pontos_leaderboard_cache = st.session_state.pontos
                     salvar_progresso_atual()
-                    time.sleep(0.1)
                     st.rerun()
 
 with col2:
@@ -1012,7 +1009,6 @@ with col2:
                     st.session_state.pontos_por_segundo += item['qtd']
                     st.session_state.pontos_leaderboard_cache = st.session_state.pontos
                     salvar_progresso_atual()
-                    time.sleep(0.1)
                     st.rerun()
 
 atualizar_no_leaderboard(st.session_state.nome_usuario, st.session_state.pontos)
