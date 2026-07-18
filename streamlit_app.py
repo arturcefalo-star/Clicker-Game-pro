@@ -467,7 +467,7 @@ with st.sidebar:
                 time.sleep(0.4)
                 st.rerun()
             
-            if st.button("Desativar", type="secondary", use_container_width=True, disabled=(mult_evento == 1)):
+            if st.button("Desativar", type="secondary", use_container_width=True, disabled=(mult_evento == 1), key="btn_desativar_evento"):
                 config_globais["multiplicador_evento"] = 1
                 salvar_configuracoes_globais(config_globais)
                 st.warning("Multiplicador do Evento Disativado!")
@@ -504,7 +504,7 @@ with st.sidebar:
                 time.sleep(0.4)
                 st.rerun()
 
-            if st.button("Desativar", type="secondary", use_container_width=True, disabled=(mult_sorte == 1)):
+            if st.button("Desativar", type="secondary", use_container_width=True, disabled=(mult_sorte == 1), key="btn_desativar_sorte"):
                 config_globais["multiplicador_sorte"] = 1
                 salvar_configuracoes_globais(config_globais)
                 st.warning("Multiplicador de Sorte Desativado!")
