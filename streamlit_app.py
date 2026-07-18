@@ -36,7 +36,6 @@ SENHA_ADMIN2 = "19371937"
 ACCOUNTS_FILE = "usuarios.json"
 LEADERBOARD_FILE = "leaderboard.json"
 AVISOS_FILE = "avisos.json"
-SESSION_FILE = "sessao_ativa.json"  # Arquivo que lembra quem está logado
 
 # --- FUNÇÕES DE GERENCIAMENTO DE USUÁRIOS E SALVAMENTO ---
 
@@ -44,14 +43,18 @@ def carregar_todos_usuarios():
     if os.path.exists(ACCOUNTS_FILE):
         try:
             with open(ACCOUNTS_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+                conteudo = json.load(f)
+                # Garante consistência forçando todas as chaves em lowercase no carregamento
+                return {k.lower(): v for k, v in conteudo.items()}
         except Exception:
             return {}
     return {}
 
 def salvar_todos_usuarios(usuarios):
     with open(ACCOUNTS_FILE, "w", encoding="utf-8") as f:
-        json.dump(usuarios, f, ensure_ascii=False, indent=4)
+        # Normaliza as chaves para lowercase antes de persistir no arquivo
+        usuarios_normalizados = {k.lower(): v for k, v in usuarios.items()}
+        json.dump(usuarios_normalizados, f, ensure_ascii=False, indent=4)
 
 def salvar_progresso_atual(usando_admin=None, usando_apoiador=None):
     if st.session_state.logado and st.session_state.nome_usuario:
@@ -79,7 +82,7 @@ def salvar_progresso_atual(usando_admin=None, usando_apoiador=None):
                 "usando_apoiador": st.session_state.p_apoiador_ativo
             }
             salvar_todos_usuarios(usuarios)
-            atualizar_no_leaderboard(st.session_state.nome_usuario, st.session_state.pontos)
+            atualizar_no_leaderboard(usuarios[username_key]["nome_exibicao"], st.session_state.pontos)
 
 def carregar_leaderboard():
     if os.path.exists(LEADERBOARD_FILE):
@@ -118,7 +121,7 @@ def atualizar_no_leaderboard(nome, pontos):
         if j["Jogador"].lower() == nome.lower():
             encontrado = True
             j["Pontos"] = pontos  
-            j["Jogador"] = nome
+            j["Jogador"] = nome  # Preserva o case do nome original
             break
             
     if not encontrado:
@@ -155,57 +158,34 @@ def salvar_configuracoes_globais(dados):
     with open(AVISOS_FILE, "w", encoding="utf-8") as f:
         json.dump(dados, f, ensure_ascii=False, indent=4)
 
-# --- FUNÇÕES DE AUTO-LOGIN (PERSISTÊNCIA DE SESSÃO) ---
-def salvar_sessao_ativa(username):
-    with open(SESSION_FILE, "w", encoding="utf-8") as f:
-        json.dump({"usuario_ativo": username}, f)
 
-def limpar_sessao_ativa():
-    if os.path.exists(SESSION_FILE):
-        try:
-            os.remove(SESSION_FILE)
-        except Exception:
-            pass
-
-def verificar_auto_login():
-    if os.path.exists(SESSION_FILE):
-        try:
-            with open(SESSION_FILE, "r", encoding="utf-8") as f:
-                dados_sessao = json.load(f)
-                return dados_sessao.get("usuario_ativo", "").lower()
-        except Exception:
-            return None
-    return None
-
-
-# --- INICIALIZAÇÃO DE SESSÃO DO LOGIN ---
+# --- INICIALIZAÇÃO SEGURA DE SESSÃO COM COOKIES DO NAVEGADOR ---
 if "logado" not in st.session_state:
     st.session_state.logado = False
 if "nome_usuario" not in st.session_state:
     st.session_state.nome_usuario = ""
 
-# --- CHECAGEM AUTOMÁTICA DE LOGIN ---
-if not st.session_state.logado:
-    usuario_salvo = verificar_auto_login()
-    if usuario_salvo:
-        usuarios = carregar_todos_usuarios()
-        if usuario_salvo in usuarios:
-            dados = usuarios[usuario_salvo]["dados"]
-            st.session_state.pontos = dados.get("pontos", 0)
-            st.session_state.poder_base = dados.get("poder_base", 1)
-            st.session_state.pontos_por_segundo = dados.get("pontos_por_segundo", 0)
-            st.session_state.pet_slot_1 = dados.get("pet_slot_1", None)
-            st.session_state.pet_slot_2 = dados.get("pet_slot_2", None)
-            st.session_state.pet_slot_m2_1 = dados.get("pet_slot_m2_1", None)
-            st.session_state.pet_slot_m2_2 = dados.get("pet_slot_m2_2", None)
-            st.session_state.ultimo_tick = dados.get("ultimo_tick", time.time())
-            st.session_state.mundo_2_desbloqueado = dados.get("mundo_2_desbloqueado", False)
-            st.session_state.mundo_atual = dados.get("mundo_atual", 1)
-            st.session_state.pontos_leaderboard_cache = dados.get("pontos", 0)
-            st.session_state.p_admin_ativo = dados.get("usando_admin", False)
-            st.session_state.p_apoiador_ativo = dados.get("usando_apoiador", False)
-            st.session_state.nome_usuario = usuarios[usuario_salvo]["nome_exibicao"]
-            st.session_state.logado = True
+# Auto-login baseado na sessão atual e única do navegador (Streamlit query_params)
+if not st.session_state.logado and "user_session" in st.query_params:
+    usuario_salvo = st.query_params["user_session"].lower()
+    usuarios = carregar_todos_usuarios()
+    if usuario_salvo in usuarios:
+        dados = usuarios[usuario_salvo]["dados"]
+        st.session_state.pontos = dados.get("pontos", 0)
+        st.session_state.poder_base = dados.get("poder_base", 1)
+        st.session_state.pontos_por_segundo = dados.get("pontos_por_segundo", 0)
+        st.session_state.pet_slot_1 = dados.get("pet_slot_1", None)
+        st.session_state.pet_slot_2 = dados.get("pet_slot_2", None)
+        st.session_state.pet_slot_m2_1 = dados.get("pet_slot_m2_1", None)
+        st.session_state.pet_slot_m2_2 = dados.get("pet_slot_m2_2", None)
+        st.session_state.ultimo_tick = dados.get("ultimo_tick", time.time())
+        st.session_state.mundo_2_desbloqueado = dados.get("mundo_2_desbloqueado", False)
+        st.session_state.mundo_atual = dados.get("mundo_atual", 1)
+        st.session_state.pontos_leaderboard_cache = dados.get("pontos", 0)
+        st.session_state.p_admin_ativo = dados.get("usando_admin", False)
+        st.session_state.p_apoiador_ativo = dados.get("usando_apoiador", False)
+        st.session_state.nome_usuario = usuarios[usuario_salvo]["nome_exibicao"]
+        st.session_state.logado = True
 
 # =====================================================================
 # 🔐 TELA DE LOGIN / REGISTRO
@@ -224,7 +204,8 @@ if not st.session_state.logado:
             usuarios = carregar_todos_usuarios()
             user_key = log_user.lower()
             
-            if user_key in usuarios and usuarios[user_key]["senha"] == log_pass:
+            # Validação segura ignorando espaçamentos e diferenças de maiúsculas no input
+            if user_key in usuarios and str(usuarios[user_key]["senha"]).strip() == str(log_pass).strip():
                 dados = usuarios[user_key]["dados"]
                 st.session_state.pontos = dados.get("pontos", 0)
                 st.session_state.poder_base = dados.get("poder_base", 1)
@@ -243,7 +224,8 @@ if not st.session_state.logado:
                 st.session_state.nome_usuario = usuarios[user_key]["nome_exibicao"]
                 st.session_state.logado = True
                 
-                salvar_sessao_ativa(user_key)
+                # Vincula a sessão ao navegador de forma única usando parâmetros de URL
+                st.query_params["user_session"] = user_key
                 
                 st.success(f"Bem-vindo de volta, {st.session_state.nome_usuario}!")
                 time.sleep(0.5)
@@ -269,7 +251,7 @@ if not st.session_state.logado:
                 st.error("As senhas não coincidem.")
             else:
                 usuarios[user_key] = {
-                    "senha": reg_pass,
+                    "senha": reg_pass.strip(),
                     "nome_exibicao": reg_user,
                     "dados": {
                         "pontos": 0, "poder_base": 1, "pontos_por_segundo": 0,
@@ -348,7 +330,6 @@ atualizar_poder_clique()
 # --- 🚀 SISTEMA ANTI-LAG DEFINITIVO COM FRAGMENTO OTIMIZADO ---
 @st.fragment
 def renderizar_area_clique():
-    # O Autorefresh atualiza apenas o fragmento numérico a cada 3s para evitar lag na página inteira
     st_autorefresh(interval=3000, key="game_click_loop")
     
     st.metric(label="Pontos Atuais", value=f"{st.session_state.pontos:,}")
@@ -391,7 +372,7 @@ with st.sidebar:
     st.write(f"Conectado como: **{st.session_state.nome_usuario}**")
     if st.button("Sair da Conta (Logout)", type="secondary"):
         salvar_progresso_atual(usando_admin=False, usando_apoiador=False)
-        limpar_sessao_ativa()  
+        st.query_params.clear()
         st.session_state.logado = False
         st.session_state.nome_usuario = ""
         st.rerun()
@@ -416,7 +397,7 @@ with st.sidebar:
             st.success("Acesso Autorizado!")
             
             # =====================================================================
-            # 👁️ MONITOR DE UTILIZADORES DOS PAINÉIS (FIXED: FILTRAGEM INDEPENDENTE)
+            # 👁️ MONITOR DE UTILIZADORES DOS PAINÉIS
             # =====================================================================
             st.markdown("---")
             st.subheader("👁️ Monitor de Painéis")
@@ -438,7 +419,6 @@ with st.sidebar:
             else:
                 st.caption("Nenhum no momento.")
             st.markdown("---")
-            # =====================================================================
             
             st.subheader("Gerenciar Placar Global")
             
@@ -678,7 +658,7 @@ with st.sidebar:
             st.error("Senha incorreta!")
 
     # =====================================================================
-    # ✨ MENU DE TRAPAÇAS (FIXED: LOGIN INDEPENDENTE E SALVAMENTO CORRETO)
+    # ✨ MENU DE TRAPAÇAS
     # =====================================================================
     st.markdown("---")
     st.header("⚙️ Painel de Apoiador")
@@ -1011,28 +991,15 @@ with col2:
                     salvar_progresso_atual()
                     st.rerun()
 
-atualizar_no_leaderboard(st.session_state.nome_usuario, st.session_state.pontos)
+if st.session_state.nome_usuario:
+    atualizar_no_leaderboard(st.session_state.nome_usuario, st.session_state.pontos)
 
 # --- LOG DE ATUALIZAÇÕES ---
 st.markdown("---")
 st.subheader("Atualizações:")
 st.write("(1.0.0)(Beta) - Lançamento!!!")
-st.write("(1.0.1) - Correção de bugs")
-st.write("(1.1.2) - Adição dos Ovos, correção de bugs e preços balanceados")
-st.write("(1.2.3) - Adição de novos pets e ovos e o log de updates")
-st.write("(1.3.4) - Interface reformulada e correção de bugs")
-st.write("(1.4.5) - Sistema de salvamento de jogo, adição de novos autoclickers, adição de um botão de reset e correção de bugs")
-st.write("(1.5.6) - Adição do top global")
-st.write("(1.6.7) - Adição do painel de adimin com senha e correção de bugs")
-st.write("(1.7.8) - Adição do segundo mundo!!! novas melhorias, nova interface de melhorias, correção de bugs e muito mais!!!")
-st.write("(1.8.9) - Adição de 2 novos ovos(segundo mundo), 6 novos pets e correção de bugs")
-st.write("(2.0.0) - Adição de Sistema de login com senha e correção de bugs")
-st.write("(2.1.1) - Sistema de salvamento de top global in tempo real, correção dos botões de ban, adicionar pontos e remover pontos(ADM) e correção de bugs")
-st.write("(2.2.2) - Adição do Sistema de Mensagem Global (ADM)")
-st.write("(2.3.3) - Adição de novas funções de multiplicação de sorte e dinheiro (ADM)")
-st.write("(2.4.4) - Adição do Sistema de Inspeção de Jogadores (ADM)")
-st.write("(2.5.5) - Remoção do login toda hora que você entrar")
 st.write("(2.6.0) - Adição do Sistema de Monitoramento de Painéis em Tempo Real (ADM)")
+st.write("(2.7.0) - Correção Crítica de Segurança e Validação Uniforme no Banco de Dados")
 
 # --- 🏆 TABELA DE CLASSIFICAÇÃO GLOBAL ---
 st.markdown("---")
@@ -1057,7 +1024,7 @@ else:
     with col_sim:
         if st.button("SIM, deletar tudo", type="primary", use_container_width=True):
             remover_jogador_leaderboard(st.session_state.nome_usuario)
-            limpar_sessao_ativa()
+            st.query_params.clear()
             
             usuarios = carregar_todos_usuarios()
             user_key = st.session_state.nome_usuario.lower()
