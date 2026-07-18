@@ -420,14 +420,13 @@ with st.sidebar:
                 salvar_configuracoes_globais(config_globais)
                 st.rerun()
                 
-            # --- 🏆 SEÇÃO DE EVENTOS DO JOGO (SEQUÊNCIA 2, 3, 4, 5) ---
+            # --- 🏆 SEÇÃO DE EVENTOS DO JOGO (MÚLTIPLOS BOTÕES) ---
             st.markdown("---")
             st.subheader("🏆 Eventos")
             
             status_evento = f"ATIVADO ({mult_evento}X) 🟢" if mult_evento > 1 else "DESATIVADO 🔴"
             st.write(f"Multiplicador Global Atual: **{status_evento}**")
             
-            # Linha com os botões de ativação em sequência (2, 3, 4, 5)
             col_ev2x, col_ev3x, col_ev4x, col_ev5x = st.columns(4)
             
             if col_ev2x.button("Ativar 2X", key="btn_ev2", use_container_width=True, disabled=(mult_evento == 2)):
@@ -458,7 +457,6 @@ with st.sidebar:
                 time.sleep(0.4)
                 st.rerun()
             
-            # Botão de desativar logo abaixo da sequência
             if st.button("Desativar Multiplicador", type="secondary", use_container_width=True, disabled=(mult_evento == 1)):
                 config_globais["multiplicador_evento"] = 1
                 salvar_configuracoes_globais(config_globais)
@@ -472,7 +470,7 @@ with st.sidebar:
 # --- CONTROLE DE VIAGEM ENTRE MUNDOS ---
 st.title("Clicker Game")
 
-# --- MONITOR DE EXIBIÇÃO DA MENSAGEM GLOBAL E EVENTOS (PARA TODOS OS JOGADORES) ---
+# --- MONITOR DE EXIBIÇÃO DA MENSAGEM GLOBAL E EVENTOS ---
 if aviso_sistema.strip() != "":
     st.info(f"📢 **Mensagem Global:** {aviso_sistema}")
 
@@ -519,7 +517,6 @@ if st.session_state.mundo_atual == 2:
         pass
 
     if st.button("            Click Here          ", key="click_m2_btn"):
-        # No mundo 2, o clique já multiplica por 2 nativamente.
         st.session_state.pontos += (st.session_state.poder_clique * 2)
         st.session_state.pontos_leaderboard_cache = st.session_state.pontos
         salvar_progresso_atual()
@@ -756,7 +753,8 @@ with col2:
             desativado = st.session_state.pontos < item['custo'] or loja_em_cooldown
             key_btn = f"p_{st.session_state.mundo_atual}_{i}"
 
-            if st.button(texto, key=key_btn, disabled=desativated, use_container_width=True):
+            # --- TOTALMENTE CORRIGIDO DE 'desativated' PARA 'desativado' ---
+            if st.button(texto, key=key_btn, disabled=desativado, use_container_width=True):
                 if st.session_state.pontos >= item['custo']:
                     st.session_state.ultima_compra = time.time()
                     st.session_state.pontos -= item['custo']
@@ -787,7 +785,7 @@ st.write("(2.1.1) - Sistema de salvamento de top global em tempo real, correçã
 st.write("(2.2.0) - Adição do Sistema de Mensagem Global (Ferramenta 'msg') no painel de administração")
 st.write("(2.4.0) - Expansão do Painel de Eventos: Adicionados multiplicadores de 2X, 3X, 4X e 5X em sequência!")
 
-# --- 🏆 TABELA DE CLASSIFICAÇÃO GLOBAL (ATUALIZADA AUTOMATICAMENTE) ---
+# --- 🏆 TABELA DE CLASSIFICAÇÃO GLOBAL ---
 st.markdown("---")
 st.subheader("Top Global:")
 dados_placar = carregar_leaderboard()
