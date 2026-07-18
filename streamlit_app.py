@@ -84,7 +84,7 @@ def carregar_leaderboard():
                 pontos = jogador.get("Pontos", jogador.get("Points", 0))
                 
                 if nome.lower() not in usuarios_unicos or pontos > usuarios_unicos[nome.lower()]["Pontos"]:
-                    usuarios_unicos[nome.lower()] = {"Jogador": nome, "Pontos": pontos}
+                    usuarios_unicos[nome.lower()] = {"Jogador": name, "Pontos": pontos}
             
             return sorted(usuarios_unicos.values(), key=lambda x: x["Pontos"], reverse=True)[:5]
         except Exception:
@@ -133,10 +133,13 @@ def carregar_configuracoes_globais():
     if os.path.exists(AVISOS_FILE):
         try:
             with open(AVISOS_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+                dados = json.load(f)
+                if "multiplicador_evento" not in dados:
+                    dados["multiplicador_evento"] = 1
+                return dados
         except Exception:
-            return {"mensagem": "", "evento_2x": False}
-    return {"mensagem": "", "evento_2x": False}
+            return {"mensagem": "", "multiplicador_evento": 1}
+    return {"mensagem": "", "multiplicador_evento": 1}
 
 def salvar_configuracoes_globais(dados):
     with open(AVISOS_FILE, "w", encoding="utf-8") as f:
@@ -233,10 +236,10 @@ if "confirmando_reset" not in st.session_state:
 if "pontos_leaderboard_cache" not in st.session_state:
     st.session_state.pontos_leaderboard_cache = st.session_state.pontos
 
-# Buscar configurações do servidor atuais
+# Buscar configurações dinâmicas do servidor
 config_globais = carregar_configuracoes_globais()
 aviso_sistema = config_globais.get("mensagem", "")
-evento_2x_ativo = config_globais.get("evento_2x", False)
+mult_evento = config_globais.get("multiplicador_evento", 1) # Padrão é 1 (sem evento)
 
 def atualizar_poder_clique():
     bonus_total = 0
@@ -251,11 +254,8 @@ def atualizar_poder_clique():
     
     poder_calculado = st.session_state.poder_base + bonus_total
     
-    # Aplica o multiplicador do evento global de forma direta se estiver ativo
-    if evento_2x_ativo:
-        st.session_state.poder_clique = poder_calculado * 2
-    else:
-        st.session_state.poder_clique = poder_calculado
+    # Multiplica o ganho com base no evento global ativo (se for maior que 1)
+    st.session_state.poder_clique = poder_calculado * mult_evento
 
 atualizar_poder_clique()
 
@@ -279,7 +279,7 @@ if st.session_state.nome_usuario != "" and os.path.exists(LEADERBOARD_FILE):
             tabela_global = json.load(f)
         for j in tabela_global:
             if j["Jogador"].lower() == st.session_state.nome_usuario.lower():
-                pontos_lb = j.get("Pontos", j.get("Points", 0))
+                pontos_lb = j.get("Points", j.get("Pontos", 0))
                 if pontos_lb != st.session_state.pontos_leaderboard_cache:
                     st.session_state.pontos = pontos_lb
                     st.session_state.pontos_leaderboard_cache = pontos_lb
@@ -418,25 +418,50 @@ with st.sidebar:
                 salvar_configuracoes_globais(config_globais)
                 st.rerun()
                 
-            # --- 🏆 NOVO: SEÇÃO DE EVENTOS DO JOGO ---
+            # --- 🏆 SEÇÃO DE EVENTOS DO JOGO (SEQUÊNCIA 2, 3, 4, 5) ---
             st.markdown("---")
             st.subheader("🏆 Eventos")
-            status_evento = "ATIVADO 🟢" if evento_2x_ativo else "DESATIVADO 🔴"
-            st.write(f"Multiplicador Global de Clique 2X: **{status_evento}**")
             
-            col_ev1, col_ev2 = st.columns(2)
-            if col_ev1.button("Ativar 2X", type="primary", use_container_width=True, disabled=evento_2x_ativo):
-                config_globais["evento_2x"] = True
+            status_evento = f"ATIVADO ({mult_evento}X) 🟢" if mult_evento > 1 else "DESATIVADO 🔴"
+            st.write(f"Multiplicador Global Atual: **{status_evento}**")
+            
+            # Linha com os botões de ativação em sequência (2, 3, 4, 5)
+            col_ev2x, col_ev3x, col_ev4x, col_ev5x = st.columns(4)
+            
+            if col_ev2x.button("Ativar 2X", key="btn_ev2", use_container_width=True, disabled=(mult_evento == 2)):
+                config_globais["multiplicador_evento"] = 2
                 salvar_configuracoes_globais(config_globais)
-                st.success("Evento 2X Global Ativado!")
-                time.sleep(0.5)
+                st.success("Evento 2X Ativado!")
+                time.sleep(0.4)
                 st.rerun()
                 
-            if col_ev2.button("Desativar", type="secondary", use_container_width=True, disabled=not evento_2x_ativo):
-                config_globais["evento_2x"] = False
+            if col_ev3x.button("Ativar 3X", key="btn_ev3", use_container_width=True, disabled=(mult_evento == 3)):
+                config_globais["multiplicador_evento"] = 3
                 salvar_configuracoes_globais(config_globais)
-                st.warning("Evento 2X Global Desativado!")
-                time.sleep(0.5)
+                st.success("Evento 3X Ativado!")
+                time.sleep(0.4)
+                st.rerun()
+                
+            if col_ev4x.button("Ativar 4X", key="btn_ev4", use_container_width=True, disabled=(mult_evento == 4)):
+                config_globais["multiplicador_evento"] = 4
+                salvar_configuracoes_globais(config_globais)
+                st.success("Evento 4X Ativado!")
+                time.sleep(0.4)
+                st.rerun()
+                
+            if col_ev5x.button("Ativar 5X", key="btn_ev5", use_container_width=True, disabled=(mult_evento == 5)):
+                config_globais["multiplicador_evento"] = 5
+                salvar_configuracoes_globais(config_globais)
+                st.success("Evento 5X Ativado!")
+                time.sleep(0.4)
+                st.rerun()
+            
+            # Botão de desativar logo abaixo da sequência
+            if st.button("Desativar Multiplicador", type="secondary", use_container_width=True, disabled=(mult_evento == 1)):
+                config_globais["multiplicador_evento"] = 1
+                salvar_configuracoes_globais(config_globais)
+                st.warning("Multiplicador do Evento Desativado!")
+                time.sleep(0.4)
                 st.rerun()
                 
         elif senha_input != "":
@@ -449,8 +474,8 @@ st.title("Clicker Game")
 if aviso_sistema.strip() != "":
     st.info(f"📢 **Mensagem Global:** {aviso_sistema}")
 
-if evento_2x_ativo:
-    st.warning("🔥 **EVENTO GLOBAL ATIVO:** Cliques dando o **DOBRO (2X)** de Pontos em todos os mundos!")
+if mult_evento > 1:
+    st.warning(f"🔥 **EVENTO GLOBAL ATIVO:** Cliques concedendo o **{mult_evento}X** de Pontos em todos os mundos!")
 
 CUSTO_MUNDO_2 = 10000000
 
@@ -501,7 +526,7 @@ if st.session_state.mundo_atual == 2:
     st.metric(label="Pontos Atuais", value=st.session_state.pontos)
     
     col_status1, col_status2 = st.columns(2)
-    col_status1.write(f"**Poder de clique:** {st.session_state.poder_clique * 2} (2X)")
+    col_status1.write(f"**Poder de clique:** {st.session_state.poder_clique * 2} (2X do Mundo)")
     col_status2.write(f"**Pontos por segundo:** {st.session_state.pontos_por_segundo}")
 
     st.markdown("---")
@@ -758,7 +783,7 @@ st.write("(1.8.9) - Adição de 2 novos ovos(segundo mundo), 6 novos pets e corr
 st.write("(2.0.0) - Adição de Sistema de login com senha e correção de bugs")
 st.write("(2.1.1) - Sistema de salvamento de top global em tempo real, correção dos botões de ban, adicionar pontos e remover pontos(ADM) e correção de bugs")
 st.write("(2.2.0) - Adição do Sistema de Mensagem Global (Ferramenta 'msg') no painel de administração")
-st.write("(2.3.0) - Adição do Painel de Eventos com multiplicador global 2X de cliques!")
+st.write("(2.4.0) - Expansão do Painel de Eventos: Adicionados multiplicadores de 2X, 3X, 4X e 5X em sequência!")
 
 # --- 🏆 TABELA DE CLASSIFICAÇÃO GLOBAL (ATUALIZADA AUTOMATICAMENTE) ---
 st.markdown("---")
