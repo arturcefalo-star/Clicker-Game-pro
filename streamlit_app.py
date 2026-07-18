@@ -385,7 +385,8 @@ with st.sidebar:
         if len(senha_input) > 0 and senha_input == SENHA_ADMIN:
             st.success("Acesso Autorizado!")
             
-            st.subheader("Modificador de Pontos")
+            # --- SELETOR DE PONTOS MOVIDO PARA O TOPO DAS AÇÕES ---
+            st.subheader("Configuração de Pontos")
             qtd_pontos = st.number_input("Quantidade de pontos para Add/Rem:", min_value=1, value=1000, step=100)
             
             st.subheader("Gerenciar Placar Global")
@@ -405,10 +406,12 @@ with st.sidebar:
                     name_jogador = jogador["Jogador"]
                     key_jogador = name_jogador.lower()
                     
-                    col_adm1, col_adm2, col_adm3, col_adm4 = st.columns([2, 1, 1, 1])
-                    col_adm1.write(f"**{name_jogador}**: {jogador['Pontos']} pts")
+                    st.write(f"**{name_jogador}**: {jogador['Pontos']} pts")
                     
-                    if col_adm2.button("Ban", key=f"del_{key_jogador}_{i}"):
+                    # Botões reorganizados em 3 colunas logo abaixo da configuração
+                    col_adm1, col_adm2, col_adm3 = st.columns(3)
+                    
+                    if col_adm1.button("Ban", key=f"del_{key_jogador}_{i}", use_container_width=True):
                         if key_jogador in usuarios_db:
                             usuarios_db[key_jogador]["dados"] = {
                                 "pontos": 0, "poder_base": 1, "pontos_por_segundo": 0,
@@ -442,7 +445,7 @@ with st.sidebar:
 
                         st.rerun()
                     
-                    if col_adm3.button("Add", key=f"add_{key_jogador}_{i}"):
+                    if col_adm2.button("Add", key=f"add_{key_jogador}_{i}", use_container_width=True):
                         if key_jogador in usuarios_db:
                             usuarios_db[key_jogador]["dados"]["pontos"] = max(0, usuarios_db[key_jogador]["dados"].get("pontos", 0) + qtd_pontos)
                             salvar_todos_usuarios(usuarios_db)
@@ -459,7 +462,7 @@ with st.sidebar:
                         salvar_leaderboard_completo(placar_completo)
                         st.rerun()
 
-                    if col_adm4.button("Rem", key=f"rem_{key_jogador}_{i}"):
+                    if col_adm3.button("Rem", key=f"rem_{key_jogador}_{i}", use_container_width=True):
                         if key_jogador in usuarios_db:
                             usuarios_db[key_jogador]["dados"]["pontos"] = max(0, usuarios_db[key_jogador]["dados"].get("pontos", 0) - qtd_pontos)
                             salvar_todos_usuarios(usuarios_db)
