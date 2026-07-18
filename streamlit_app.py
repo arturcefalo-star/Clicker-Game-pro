@@ -266,8 +266,6 @@ if not st.session_state.logado:
 
 if "poder_clique" not in st.session_state:
     st.session_state.poder_clique = 1  
-if "ultima_compra" not in st.session_state:
-    st.session_state.ultima_compra = 0.0
 if "confirmando_reset" not in st.session_state:
     st.session_state.confirmando_reset = False
 if "pontos_leaderboard_cache" not in st.session_state:
@@ -310,7 +308,7 @@ def calcular_chances_ovo(c1, c2, c3_base):
     c2_atual = (c2 / soma_base_comuns) * restante
     return c1_atual, c2_atual, c3_atual
 
-# Processamento passivo global de pontos baseado no tempo corrido real
+# Processamento passivo de pontos por segundo
 agora = time.time()
 tempo_passado = agora - st.session_state.ultimo_tick
 if tempo_passado >= 1.0:
@@ -321,7 +319,7 @@ if tempo_passado >= 1.0:
 
 atualizar_poder_clique()
 
-# --- ÁREA DE CLIQUE FRAGMENTADA ---
+# --- ÁREA DE CLIQUE ---
 @st.fragment
 def renderizar_area_clique():
     st_autorefresh(interval=3000, key="game_click_loop")
@@ -344,7 +342,7 @@ def renderizar_area_clique():
     st.write(f"**Pontos por segundo:** {st.session_state.pontos_por_segundo}")
 
 
-# Sincronização em background segura do placar
+# Sincronização em background do placar
 if st.session_state.nome_usuario != "" and os.path.exists(LEADERBOARD_FILE):
     try:
         with open(LEADERBOARD_FILE, "r", encoding="utf-8") as f:
@@ -359,10 +357,7 @@ if st.session_state.nome_usuario != "" and os.path.exists(LEADERBOARD_FILE):
     except Exception:
         pass
 
-# COOLDOWN REDUZIDO E REMOVIDO DA VALIDAÇÃO ESTRITA PARA EVITAR TRAVAMENTOS CONTÍNUOS
-loja_em_cooldown = (time.time() - st.session_state.ultima_compra) < 0.1
-
-# --- BARRA LATERAL: LOGOUT, PAINEL ADMIN E TRAPAÇAS ---
+# --- BARRA LATERAL ---
 with st.sidebar:
     st.write(f"Conectado como: **{st.session_state.nome_usuario}**")
     if st.button("Sair da Conta (Logout)", type="secondary"):
@@ -446,12 +441,12 @@ with st.sidebar:
                 salvar_configuracoes_globais(config_globais)
                 st.rerun()
 
-            # --- 🛠️ INSPEÇÃO DE JOGADORES CORRIGIDA EM TEMPO REAL ---
+            # --- 🛠️ INSPEÇÃO DE JOGADORES (CORRIGIDO: EXIBE TODOS E ATUALIZA PODER BASE) ---
             st.markdown("---")
             st.subheader("Inspecionar Jogador")
 
-            # CORRIGIDO: Coleta e exibe TODOS os jogadores registrados no json do sistema
             usuarios_db_inspect = carregar_todos_usuarios()
+            # Puxa o nome de exibição de TODOS os jogadores salvos no banco de dados
             lista_jogadores = [usuarios_db_inspect[k]["nome_exibicao"] for k in sorted(usuarios_db_inspect.keys())]
 
             if lista_jogadores:
@@ -464,7 +459,7 @@ with st.sidebar:
                     "Selecione um jogador:", 
                     options=lista_jogadores, 
                     index=idx_inicial, 
-                    key=f"inspect_select_live_{len(lista_jogadores)}"
+                    key="inspect_select_global"
                 )
                 
                 st.session_state.jogador_sob_inspecao = jogador_selecionado
@@ -478,9 +473,9 @@ with st.sidebar:
                         
                         st.markdown(f"### Status de: **{alvo_atual}**")
                         
-                        # CORRIGIDO: Poder Base agora reflete fielmente o valor salvo em tempo real
                         col_ins1, col_ins2, col_ins3 = st.columns(3)
                         col_ins1.metric("Pontos", f"{dados_player.get('pontos', 0):,}")
+                        # CORREÇÃO: Puxa o valor real armazenado direto no arquivo para o Poder Base
                         col_ins2.metric("Poder Base", f"{dados_player.get('poder_base', 1):,}")
                         col_ins3.metric("Pontos/Seg", f"{dados_player.get('pontos_por_segundo', 0):,}")
                         
@@ -657,7 +652,7 @@ with st.sidebar:
         elif senha_input != "":
             st.error("Senha incorreta!")
 
-    # --- MENU DE APOIADOR / TRAPAÇAS ---
+    # --- MENU DE APOIADOR ---
     st.markdown("---")
     st.header("⚙️ Painel de Apoiador")
     
@@ -699,7 +694,7 @@ with st.sidebar:
         elif senha_cheat != "":
             st.error("Senha incorreta!")
 
-# --- CONTROLE DE VIAGEM ENTRE MUNDOS ---
+# --- CONTROLE DE MUNDOS ---
 st.title("Clicker Game")
 
 if aviso_sistema.strip() != "":
@@ -739,7 +734,7 @@ else:
 
 st.markdown("---")
 
-# --- CONTEÚDO DINÂMICO DOS MUNDOS ---
+# --- CONTEÚDO MUNDO 2 ---
 if st.session_state.mundo_atual == 2:
     st.subheader("Segundo mundo")
     st.info("2X de multiplicador de mundo")
@@ -766,8 +761,8 @@ if st.session_state.mundo_atual == 2:
         
         desativar_m2_ovo1 = st.session_state.pontos < CUSTO_OVO_MUNDO_2_BARATO
         
+        # CORREÇÃO: Removida qualquer trava de tempo/cooldown interna do botão
         if st.button(f"Abrir Ovo = {CUSTO_OVO_MUNDO_2_BARATO:,} Pontos", disabled=desativar_m2_ovo1, key="botao_m2_ovo1"):
-            st.session_state.ultima_compra = time.time()  
             if st.session_state.pontos >= CUSTO_OVO_MUNDO_2_BARATO:
                 st.session_state.pontos -= CUSTO_OVO_MUNDO_2_BARATO
                 sorteado = random.choices(
@@ -779,7 +774,6 @@ if st.session_state.mundo_atual == 2:
                 st.session_state.pet_slot_m2_1 = sorteado
                 atualizar_poder_clique()
                 salvar_progresso_atual()
-                time.sleep(0.1) 
                 st.rerun()
 
         if st.session_state.pet_slot_m2_1:
@@ -801,8 +795,8 @@ if st.session_state.mundo_atual == 2:
         
         desativar_m2_ovo2 = st.session_state.pontos < CUSTO_OVO_MUNDO_2_CARO
         
+        # CORREÇÃO: Removida qualquer trava de tempo/cooldown interna do botão
         if st.button(f"Abrir Ovo = {CUSTO_OVO_MUNDO_2_CARO:,} Pontos", disabled=desativar_m2_ovo2, key="botao_m2_ovo2"):
-            st.session_state.ultima_compra = time.time()
             if st.session_state.pontos >= CUSTO_OVO_MUNDO_2_CARO:
                 st.session_state.pontos -= CUSTO_OVO_MUNDO_2_CARO
                 sorteado = random.choices(
@@ -814,7 +808,6 @@ if st.session_state.mundo_atual == 2:
                 st.session_state.pet_slot_m2_2 = sorteado
                 atualizar_poder_clique()
                 salvar_progresso_atual()
-                time.sleep(0.1) 
                 st.rerun()
 
         if st.session_state.pet_slot_m2_2:
@@ -853,8 +846,8 @@ if st.session_state.mundo_atual != 2:
         custo_ovo1 = 100
         desativar_ovo1 = st.session_state.pontos < custo_ovo1
         
+        # CORREÇÃO: Sem travas temporais de clique consecutivo
         if st.button(f"Abrir Ovo = {custo_ovo1} Pontos", disabled=desativar_ovo1, key="botao_ovo1"):
-            st.session_state.ultima_compra = time.time()  
             if st.session_state.pontos >= custo_ovo1:
                 st.session_state.pontos -= custo_ovo1
                 sorteado_ovo1 = random.choices(
@@ -866,7 +859,6 @@ if st.session_state.mundo_atual != 2:
                 st.session_state.pet_slot_1 = sorteado_ovo1
                 atualizar_poder_clique()
                 salvar_progresso_atual()
-                time.sleep(0.1) 
                 st.rerun()
 
         if st.session_state.pet_slot_1:
@@ -889,8 +881,8 @@ if st.session_state.mundo_atual != 2:
         custo_ovo2 = 1000
         desativar_ovo2 = st.session_state.pontos < custo_ovo2
         
+        # CORREÇÃO: Sem travas temporais de clique consecutivo
         if st.button(f"Abrir Ovo = {custo_ovo2} Pontos", disabled=desativar_ovo2, key="botao_ovo2"):
-            st.session_state.ultima_compra = time.time()
             if st.session_state.pontos >= custo_ovo2:
                 st.session_state.pontos -= custo_ovo2
                 sorteado_ovo2 = random.choices(
@@ -902,7 +894,6 @@ if st.session_state.mundo_atual != 2:
                 st.session_state.pet_slot_2 = sorteado_ovo2
                 atualizar_poder_clique()
                 salvar_progresso_atual()
-                time.sleep(0.1) 
                 st.rerun()
 
         if st.session_state.pet_slot_2:
@@ -916,7 +907,7 @@ if st.session_state.mundo_atual != 2:
 
 st.markdown("---")
 
-# --- LOJA DE MELHORIAS ---
+# --- LOJA DE MELHORIAS (INTEGRALMENTE DESTRAVADA) ---
 st.subheader("Loja de Melhorias")
 
 if st.session_state.mundo_atual == 2:
@@ -944,7 +935,7 @@ else:
     melhorias_passivas = [
         {"qtd": 5, "custo": 200}, {"qtd": 10, "custo": 600}, {"qtd": 20, "custo": 1100},
         {"qtd": 100, "custo": 7500}, {"qtd": 200, "custo": 14500}, {"qtd": 1000, "custo": 72500},
-        {"qtd": 2000, "removed_custo": 145000, "custo": 145000}, {"qtd": 5000, "custo": 360000}, {"qtd": 10000, "custo": 725000},
+        {"qtd": 2000, "custo": 145000}, {"qtd": 5000, "custo": 360000}, {"qtd": 10000, "custo": 725000},
         {"qtd": 20000, "custo": 1450000}
     ]
 
@@ -958,9 +949,9 @@ with col1:
             desativado = st.session_state.pontos < item['custo']
             key_btn = f"c_{st.session_state.mundo_atual}_{i}"
 
+            # CORREÇÃO: Removida dependência de cooldown global. Resposta instantânea de compra.
             if st.button(texto, key=key_btn, disabled=desativado, use_container_width=True):
                 if st.session_state.pontos >= item['custo']:
-                    st.session_state.ultima_compra = time.time()
                     st.session_state.pontos -= item['custo']
                     st.session_state.poder_base += item['qtd']
                     atualizar_poder_clique()  
@@ -976,9 +967,9 @@ with col2:
             desativado = st.session_state.pontos < item['custo']
             key_btn = f"p_{st.session_state.mundo_atual}_{i}"
 
+            # CORREÇÃO: Removida dependência de cooldown global. Resposta instantânea de compra.
             if st.button(texto, key=key_btn, disabled=desativado, use_container_width=True):
                 if st.session_state.pontos >= item['custo']:
-                    st.session_state.ultima_compra = time.time()
                     st.session_state.pontos -= item['custo']
                     st.session_state.pontos_por_segundo += item['qtd']
                     st.session_state.pontos_leaderboard_cache = st.session_state.pontos
@@ -994,10 +985,9 @@ st.subheader("Atualizações:")
 st.write("(1.0.0)(Beta) - Lançamento!!!")
 st.write("(2.6.0) - Adição do Sistema de Monitoramento de Painéis em Tempo Real (ADM)")
 st.write("(2.7.0) - Correção Crítica de Segurança e Validação Uniforme no Banco de Dados")
-st.write("(2.9.0) - Reconstrução Dinâmica de Chave no Seletor de Inspeção para atualização 100% em Tempo Real")
-st.write("(3.0.0) - Correção do salvamento do Poder Base e remoção de lag nos botões de compras")
+st.write("(3.1.0) - Remoção total de delays, sincronização limpa do seletor de inspeção e do poder base")
 
-# --- 🏆 TABELA DE CLASSIFICAÇÃO GLOBAL ---
+# --- TABELA DE CLASSIFICAÇÃO GLOBAL ---
 st.markdown("---")
 st.subheader("Top Global:")
 dados_placar = carregar_leaderboard()
