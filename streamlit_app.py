@@ -59,11 +59,6 @@ def salvar_progresso_atual(usando_admin=None, usando_apoiador=None):
         username_key = st.session_state.nome_usuario.lower()
         
         if username_key in usuarios:
-            # Preserva ou atualiza dinamicamente o status dos painéis no JSON global
-            status_adm = usando_admin if usando_admin is not None else usuarios[username_key]["dados"].get("usando_admin", False)
-            status_apo = usando_apoiador if usando_apoiador is not None else usuarios[username_key]["dados"].get("usando_apoiador", False)
-            
-            # Força o estado atual da sessão a refletir o que foi pedido para salvar
             if usando_admin is not None:
                 st.session_state.p_admin_ativo = usando_admin
             if usando_apoiador is not None:
@@ -80,8 +75,8 @@ def salvar_progresso_atual(usando_admin=None, usando_apoiador=None):
                 "ultimo_tick": st.session_state.ultimo_tick,
                 "mundo_2_desbloqueado": st.session_state.mundo_2_desbloqueado,
                 "mundo_atual": st.session_state.mundo_atual,
-                "usando_admin": st.session_state.get("p_admin_ativo", False),
-                "usando_apoiador": st.session_state.get("p_apoiador_ativo", False)
+                "usando_admin": st.session_state.p_admin_ativo,
+                "usando_apoiador": st.session_state.p_apoiador_ativo
             }
             salvar_todos_usuarios(usuarios)
             atualizar_no_leaderboard(st.session_state.nome_usuario, st.session_state.pontos)
@@ -395,8 +390,6 @@ loja_em_cooldown = (time.time() - st.session_state.ultima_compra) < 0.6
 with st.sidebar:
     st.write(f"Conectado como: **{st.session_state.nome_usuario}**")
     if st.button("Sair da Conta (Logout)", type="secondary"):
-        st.session_state.p_admin_ativo = False
-        st.session_state.p_apoiador_ativo = False
         salvar_progresso_atual(usando_admin=False, usando_apoiador=False)
         limpar_sessao_ativa()  
         st.session_state.logado = False
@@ -405,10 +398,11 @@ with st.sidebar:
         
     st.markdown("---")
     st.header("⚙️ Painel de Admin")
-    modo_admin_chk = st.checkbox("Ativar Modo Administrador", value=st.session_state.p_admin_ativo)
+    
+    # Checkbox controlado de forma independente para evitar loops de reset
+    modo_admin_chk = st.checkbox("Exibir Opções de Admin", value=st.session_state.p_admin_ativo)
     
     if not modo_admin_chk and st.session_state.p_admin_ativo:
-        st.session_state.p_admin_ativo = False
         salvar_progresso_atual(usando_admin=False)
         st.rerun()
             
@@ -417,14 +411,13 @@ with st.sidebar:
         
         if len(senha_input) > 0 and senha_input == SENHA_ADMIN:
             if not st.session_state.p_admin_ativo:
-                st.session_state.p_admin_ativo = True
                 salvar_progresso_atual(usando_admin=True)
                 st.rerun()
                 
-            st.success("Success!")
+            st.success("Acesso Autorizado!")
             
             # =====================================================================
-            # 👁️ MONITOR DE UTILIZADORES DOS PAINÉIS
+            # 👁️ MONITOR DE UTILIZADORES DOS PAINÉIS (FIXED: LEITURA COMPLETA DO JSON)
             # =====================================================================
             st.markdown("---")
             st.subheader("👁️ Monitor de Painéis")
@@ -488,7 +481,6 @@ with st.sidebar:
             lista_jogadores = [usuarios_db_inspect[k]["nome_exibicao"] for k in usuarios_db_inspect]
 
             if lista_jogadores:
-                # Corrigido index dinâmico para evitar bugs ao recarregar a lista
                 idx_inicial = 0
                 if st.session_state.jogador_sob_inspecao in lista_jogadores:
                     idx_inicial = lista_jogadores.index(st.session_state.jogador_sob_inspecao)
@@ -687,14 +679,15 @@ with st.sidebar:
             st.error("Senha incorreta!")
 
     # =====================================================================
-    # ✨ MENU DE TRAPAÇAS (FIX: SALVAMENTO EM TEMPO REAL)
+    # ✨ MENU DE TRAPAÇAS (FIXED: LOGIN INDEPENDENTE SEM CONFLITOS)
     # =====================================================================
     st.markdown("---")
     st.header("⚙️ Painel de Apoiador")
-    modo_apoiador_chk = st.checkbox("Ativar Modo Apoiador", value=st.session_state.p_apoiador_ativo)
+    
+    # Renderiza o checkbox espelhado sem resetar o fluxo de render
+    modo_apoiador_chk = st.checkbox("Exibir Opções de Apoiador", value=st.session_state.p_apoiador_ativo)
     
     if not modo_apoiador_chk and st.session_state.p_apoiador_ativo:
-        st.session_state.p_apoiador_ativo = False
         salvar_progresso_atual(usando_apoiador=False)
         st.rerun()
             
@@ -703,11 +696,10 @@ with st.sidebar:
         
         if len(senha_cheat) > 0 and senha_cheat == SENHA_ADMIN2:
             if not st.session_state.p_apoiador_ativo:
-                st.session_state.p_apoiador_ativo = True
                 salvar_progresso_atual(usando_apoiador=True)
                 st.rerun()
                 
-            st.success("Success! ")
+            st.success("Acesso Autorizado!")
             
             qtd_cheat = st.number_input("Quantidade de Pontos:", min_value=1, value=5000, step=500, key="qtd_cheat_val")
             
