@@ -927,7 +927,7 @@ st.write("(2.1.1) - Sistema de salvamento de top global in tempo real, correçã
 st.write("(2.2.2) - Adição do Sistema de Mensagem Global (ADM)")
 st.write("(2.3.3) - Adição de novas funções de multiplicação de sorte e dinheiro (ADM)")
 st.write("(2.4.4) - Adição do Sistema de Inspeção de Jogadores (ADM)")
-st.write("(2.5.5) - Integração do Sistema de Login Automático de Sessão")
+st.write("(2.5.5) - Remoção do login toda hora que você entrar")
 
 # --- 🏆 TABELA DE CLASSIFICAÇÃO GLOBAL ---
 st.markdown("---")
