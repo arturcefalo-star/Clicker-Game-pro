@@ -32,6 +32,7 @@ CUSTO_OVO_MUNDO_2_CARO = 500000000   # Custo do segundo ovo do Mundo 2
 # =====================================================================
 
 SENHA_ADMIN = "XXxx67xxXX"
+SENHA_ADMIN2 = "lililili"
 ACCOUNTS_FILE = "usuarios.json"
 LEADERBOARD_FILE = "leaderboard.json"
 AVISOS_FILE = "avisos.json"
@@ -621,12 +622,12 @@ with st.sidebar:
     # ✨ MENU DE TRAPAÇAS (FUNÇÕES BÁSICAS PARA SI MESMO)
     # =====================================================================
     st.markdown("---")
-    st.header("✨ Menu de Trapaças")
-    if st.checkbox("Ativar Auto-Modificação"):
-        senha_cheat = st.text_input("Digite a senha de Admin para liberar:", type="password", key="pwd_cheat")
+    st.header("Ativar modo Apoiador do Administrador")
+    if st.checkbox("Ativar Modo Apoiador"):
+        senha_cheat = st.text_input("Digite a senha de Operador:", type="password", key="pwd_cheat")
         
-        if len(senha_cheat) > 0 and senha_cheat == SENHA_ADMIN:
-            st.success("Acesso às Trapaças Autorizado!")
+        if len(senha_cheat) > 0 and senha_cheat == SENHA_ADMIN2:
+            st.success("Success! ")
             
             qtd_cheat = st.number_input("Quantidade de Pontos:", min_value=1, value=5000, step=500, key="qtd_cheat_val")
             
