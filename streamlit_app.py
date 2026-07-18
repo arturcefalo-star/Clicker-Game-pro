@@ -367,7 +367,7 @@ if st.session_state.nome_usuario != "" and os.path.exists(LEADERBOARD_FILE):
 
 loja_em_cooldown = (time.time() - st.session_state.ultima_compra) < 0.6
 
-# --- BARRA LATERAL: LOGOUT E PAINEL ADMIN ---
+# --- BARRA LATERAL: LOGOUT, PAINEL ADMIN E TRAPAÇAS ---
 with st.sidebar:
     st.write(f"Conectado como: **{st.session_state.nome_usuario}**")
     if st.button("Sair da Conta (Logout)", type="secondary"):
@@ -380,7 +380,7 @@ with st.sidebar:
     st.markdown("---")
     st.header("⚙️ Painel de Admin")
     if st.checkbox("Ativar Modo Administrador"):
-        senha_input = st.text_input("Digite a senha de Admin:", type="password")
+        senha_input = st.text_input("Digite a senha de Admin:", type="password", key="pwd_admin")
         
         if len(senha_input) > 0 and senha_input == SENHA_ADMIN:
             st.success("Acesso Autorizado!")
@@ -615,6 +615,40 @@ with st.sidebar:
                 st.rerun()
                 
         elif senha_input != "":
+            st.error("Senha incorreta!")
+
+    # =====================================================================
+    # ✨ MENU DE TRAPAÇAS (FUNÇÕES BÁSICAS PARA SI MESMO)
+    # =====================================================================
+    st.markdown("---")
+    st.header("✨ Menu de Trapaças")
+    if st.checkbox("Ativar Auto-Modificação"):
+        senha_cheat = st.text_input("Digite a senha de Admin para liberar:", type="password", key="pwd_cheat")
+        
+        if len(senha_cheat) > 0 and senha_cheat == SENHA_ADMIN:
+            st.success("Acesso às Trapaças Autorizado!")
+            
+            qtd_cheat = st.number_input("Quantidade de Pontos:", min_value=1, value=5000, step=500, key="qtd_cheat_val")
+            
+            col_ch1, col_ch2 = st.columns(2)
+            
+            if col_ch1.button("✨ Dar Pontos", use_container_width=True):
+                st.session_state.pontos += qtd_cheat
+                st.session_state.pontos_leaderboard_cache = st.session_state.pontos
+                salvar_progresso_atual()
+                st.success(f"+{qtd_cheat:,} pontos adicionados!")
+                time.sleep(0.4)
+                st.rerun()
+                
+            if col_ch2.button("💥 Remover Pontos", use_container_width=True):
+                st.session_state.pontos = max(0, st.session_state.pontos - qtd_cheat)
+                st.session_state.pontos_leaderboard_cache = st.session_state.pontos
+                salvar_progresso_atual()
+                st.warning(f"{qtd_cheat:,} pontos removidos!")
+                time.sleep(0.4)
+                st.rerun()
+                
+        elif senha_cheat != "":
             st.error("Senha incorreta!")
 
 # --- CONTROLE DE VIAGEM ENTRE MUNDOS ---
