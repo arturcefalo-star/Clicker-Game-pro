@@ -65,7 +65,7 @@ def salvar_progresso_atual():
                 "pet_slot_2": st.session_state.pet_slot_2,
                 "pet_slot_m2_1": st.session_state.pet_slot_m2_1,
                 "pet_slot_m2_2": st.session_state.pet_slot_m2_2,
-                "ultimo_tick": time.time(),
+                "ultimo_tick": st.session_state.ultimo_tick,
                 "mundo_2_desbloqueado": st.session_state.mundo_2_desbloqueado,
                 "mundo_atual": st.session_state.mundo_atual
             }
@@ -128,7 +128,6 @@ def remover_jogador_leaderboard(nome):
         except Exception:
             pass
 
-# --- FUNÇÕES DO SISTEMA DE MENSAGEM E EVENTO GLOBAL ---
 def carregar_configuracoes_globais():
     if os.path.exists(AVISOS_FILE):
         try:
@@ -180,7 +179,7 @@ if not st.session_state.logado:
                 st.session_state.pet_slot_2 = dados.get("pet_slot_2", None)
                 st.session_state.pet_slot_m2_1 = dados.get("pet_slot_m2_1", None)
                 st.session_state.pet_slot_m2_2 = dados.get("pet_slot_m2_2", None)
-                st.session_state.ultimo_tick = time.time()
+                st.session_state.ultimo_tick = dados.get("ultimo_tick", time.time())
                 st.session_state.mundo_2_desbloqueado = dados.get("mundo_2_desbloqueado", False)
                 st.session_state.mundo_atual = dados.get("mundo_atual", 1)
                 st.session_state.pontos_leaderboard_cache = dados.get("pontos", 0)
@@ -237,8 +236,9 @@ if "confirmando_reset" not in st.session_state:
     st.session_state.confirmando_reset = False
 if "pontos_leaderboard_cache" not in st.session_state:
     st.session_state.pontos_leaderboard_cache = st.session_state.pontos
+if "ultimo_tick" not in st.session_state:
+    st.session_state.ultimo_tick = time.time()
 
-# Buscar configurações dinâmicas do servidor
 config_globais = carregar_configuracoes_globais()
 aviso_sistema = config_globais.get("mensagem", "")
 mult_evento = config_globais.get("multiplicador_evento", 1) 
@@ -270,25 +270,41 @@ def calcular_chances_ovo(c1, c2, c3_base):
 
 atualizar_poder_clique()
 
-# --- 🚀 SISTEMA ANTI-LAG: REFRESH PASSIVO OTIMIZADO ---
-# Aumentado para 3000ms (3 segundos) para evitar que a interface trave ou pisque loucamente.
-st_autorefresh(interval=3000, key="global_loop")
+# --- 🚀 SISTEMA ANTI-LAG DEFINITIVO COM FRAGMENTO OTIMIZADO ---
+@st.fragment
+def renderizar_area_clique():
+    # Isso impede o resto da página inteira (e o admin) de piscar ou recarregar!
+    st_autorefresh(interval=3000, key="game_click_loop")
+    
+    agora = time.time()
+    tempo_passado = agora - st.session_state.ultimo_tick
 
-if "ultimo_tick" not in st.session_state:
-    st.session_state.ultimo_tick = time.time()
+    if tempo_passado >= 1.0:
+        ciclos = int(tempo_passado)
+        st.session_state.pontos += st.session_state.pontos_por_segundo * ciclos
+        st.session_state.ultimo_tick = agora - (tempo_passado - ciclos)
+        st.session_state.pontos_leaderboard_cache = st.session_state.pontos
+        salvar_progresso_atual()
 
-agora = time.time()
-tempo_passado = agora - st.session_state.ultimo_tick
+    st.metric(label="Pontos Atuais", value=st.session_state.pontos)
+    
+    if st.session_state.mundo_atual == 2:
+        if st.button("            Click Here          ", key="click_m2_btn", use_container_width=True):
+            st.session_state.pontos += (st.session_state.poder_clique * 2)
+            st.session_state.pontos_leaderboard_cache = st.session_state.pontos
+            salvar_progresso_atual()
+        st.write(f"**Poder de clique:** {st.session_state.poder_clique * 2} (2X do Mundo)")
+    else:
+        if st.button("            Click Here          ", key="click_m1_btn", use_container_width=True):
+            st.session_state.pontos += st.session_state.poder_clique
+            st.session_state.pontos_leaderboard_cache = st.session_state.pontos
+            salvar_progresso_atual()
+        st.write(f"**Poder de clique:** {st.session_state.poder_clique}")
+        
+    st.write(f"**Pontos por segundo:** {st.session_state.pontos_por_segundo}")
 
-# Sistema anti-lag calcula matematicamente o tempo acumulado offline/em background
-if tempo_passado >= 1.0:
-    ciclos = int(tempo_passado)
-    st.session_state.pontos += st.session_state.pontos_por_segundo * ciclos
-    st.session_state.ultimo_tick = agora - (tempo_passado - ciclos)
-    st.session_state.pontos_leaderboard_cache = st.session_state.pontos
-    salvar_progresso_atual()
 
-# --- SINCRONIZAÇÃO SEGURA DO JOGADOR LOGADO ---
+# Sincronização em background segura do placar
 if st.session_state.nome_usuario != "" and os.path.exists(LEADERBOARD_FILE):
     try:
         with open(LEADERBOARD_FILE, "r", encoding="utf-8") as f:
@@ -303,7 +319,6 @@ if st.session_state.nome_usuario != "" and os.path.exists(LEADERBOARD_FILE):
     except Exception:
         pass
 
-# COOLDOWN DE COMPRA
 loja_em_cooldown = (time.time() - st.session_state.ultima_compra) < 0.6
 
 # --- BARRA LATERAL: LOGOUT E PAINEL ADMIN ---
@@ -416,7 +431,6 @@ with st.sidebar:
             else:
                 st.info("Nenhum jogador registrado no placar ainda.")
                 
-            # --- FERRAMENTA MSG ---
             st.markdown("---")
             st.subheader("Mensagem Global")
             nova_msg = st.text_input("Texto Global:", value=aviso_sistema, placeholder="Digite o aviso geral aqui...")
@@ -434,7 +448,6 @@ with st.sidebar:
                 salvar_configuracoes_globais(config_globais)
                 st.rerun()
 
-            # --- 🔍 FERRAMENTA DE INSPEÇÃO DE JOGADORES (ADM) ---
             st.markdown("---")
             st.subheader("🔍 Inspecionar Jogador")
 
@@ -478,11 +491,9 @@ with st.sidebar:
             else:
                 st.info("Nenhum jogador cadastrado para inspection.")
                 
-            # --- 🏆 SEÇÃO DE EVENTOS DO JOGO ---
             st.markdown("---")
             st.subheader("Eventos de adimin")
             
-            # Multiplicador de Dinheiro
             status_evento = f"ATIVADO ({mult_evento}X)" if mult_evento > 1 else "DESATIVADO"
             st.write(f"Multiplicador de Dinheiro: **{status_evento}**")
             
@@ -519,7 +530,6 @@ with st.sidebar:
                 time.sleep(0.4)
                 st.rerun()
 
-            # Multiplicador de Sorte (Porcentagem)
             status_sorte = f"ATIVADO ({mult_sorte}X)" if mult_sorte > 1 else "DESATIVADO"
             st.write(f"Multiplicador de Sorte: **{status_sorte}**")
 
@@ -610,17 +620,8 @@ if st.session_state.mundo_atual == 2:
     except Exception:
         pass
 
-    # --- ANTI-LAG: st.rerun() removido do botão de clique manual ---
-    if st.button("            Click Here          ", key="click_m2_btn"):
-        st.session_state.pontos += (st.session_state.poder_clique * 2)
-        st.session_state.pontos_leaderboard_cache = st.session_state.pontos
-        salvar_progresso_atual()
-
-    st.metric(label="Pontos Atuais", value=st.session_state.pontos)
-    
-    col_status1, col_status2 = st.columns(2)
-    col_status1.write(f"**Poder de clique:** {st.session_state.poder_clique * 2} (2X do Mundo)")
-    col_status2.write(f"**Pontos por segundo:** {st.session_state.pontos_por_segundo}")
+    # CHAMADA DO FRAGMENTO ISOLADO DO MUNDO 2 (SEM PISCAR TELA)
+    renderizar_area_clique()
 
     st.markdown("---")
     st.subheader("Comprar ovos:")
@@ -709,16 +710,8 @@ if st.session_state.mundo_atual != 2:
     except Exception:
         st.caption("🎵 Arquivo 'musica67.mp3' não encontrado.")
 
-    # --- ANTI-LAG: st.rerun() removido do botão de clique manual ---
-    if st.button("            Click Here          ", key="click_m1_btn"):
-        st.session_state.pontos += st.session_state.poder_clique
-        st.session_state.pontos_leaderboard_cache = st.session_state.pontos
-        salvar_progresso_atual()
-
-    st.metric(label="Pontos Atuais", value=st.session_state.pontos)
-    col_status1, col_status2 = st.columns(2)
-    col_status1.write(f"**Poder de clique:** {st.session_state.poder_clique}")
-    col_status2.write(f"**Pontos por segundo:** {st.session_state.pontos_por_segundo}")
+    # CHAMADA DO FRAGMENTO ISOLADO DO MUNDO 1 (SEM PISCAR TELA)
+    renderizar_area_clique()
 
     st.markdown("---")
     st.subheader("Comprar Ovos:")
@@ -869,7 +862,6 @@ with col2:
                     time.sleep(0.1)
                     st.rerun()
 
-# --- ATUALIZAÇÕES AUTOMÁTICAS NO LEADERBOARD ---
 atualizar_no_leaderboard(st.session_state.nome_usuario, st.session_state.pontos)
 
 # --- LOG DE ATUALIZAÇÕES ---
