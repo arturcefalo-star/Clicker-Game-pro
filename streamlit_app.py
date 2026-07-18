@@ -68,7 +68,7 @@ def salvar_progresso_atual():
                 "ultimo_tick": st.session_state.ultimo_tick,
                 "mundo_2_desbloqueado": st.session_state.mundo_2_desbloqueado,
                 "mundo_atual": st.session_state.mundo_atual,
-                "multiplicador_global": st.session_state.multiplicador_global  # Salvando o multiplicador
+                "multiplicador_global": st.session_state.multiplicador_global  # Salvando o multiplicador no JSON
             }
             salvar_todos_usuarios(usuarios)
             atualizar_no_leaderboard(st.session_state.nome_usuario, st.session_state.pontos)
@@ -250,7 +250,7 @@ def atualizar_poder_clique():
     if st.session_state.pet_slot_m2_2:
         bonus_total += st.session_state.pet_slot_m2_2["bonus"]
     
-    # Aplica o multiplicador global sobre a soma total do poder base + pets
+    # Aplica o multiplicador global gerenciado pelo admin
     st.session_state.poder_clique = (st.session_state.poder_base + bonus_total) * st.session_state.multiplicador_global
 
 atualizar_poder_clique()
@@ -398,6 +398,37 @@ with st.sidebar:
             else:
                 st.info("Nenhum jogador registrado no placar ainda.")
                 
+            # =====================================================================
+            # 🔥 SISTEMA DE MULTIPLICADOR GLOBAL (DENTRO DO PAINEL DE ADMIN)
+            # =====================================================================
+            st.markdown("---")
+            st.subheader("⚡ Multiplicador Global")
+            st.write(f"Ativo no Servidor: **{st.session_state.multiplicador_global}x**")
+            
+            col_mult1, col_mult2 = st.columns(2)
+            with col_mult1:
+                if st.button("Ativar 2x", use_container_width=True, key="adm_mult_2"):
+                    st.session_state.multiplicador_global = 2
+                    atualizar_poder_clique()
+                    salvar_progresso_atual()
+                    st.rerun()
+                if st.button("Ativar 4x", use_container_width=True, key="adm_mult_4"):
+                    st.session_state.multiplicador_global = 4
+                    atualizar_poder_clique()
+                    salvar_progresso_atual()
+                    st.rerun()
+            with col_mult2:
+                if st.button("Ativar 3x", use_container_width=True, key="adm_mult_3"):
+                    st.session_state.multiplicador_global = 3
+                    atualizar_poder_clique()
+                    salvar_progresso_atual()
+                    st.rerun()
+                if st.button("Ativar 5x", use_container_width=True, key="adm_mult_5"):
+                    st.session_state.multiplicador_global = 5
+                    atualizar_poder_clique()
+                    salvar_progresso_atual()
+                    st.rerun()
+
             # --- FERRAMENTA MSG (MENSAGEM GLOBAL) ---
             st.markdown("---")
             st.subheader("📢 Ferramenta 'msg'")
@@ -451,43 +482,6 @@ else:
             st.session_state.mundo_atual = 1
             salvar_progresso_atual()
             st.rerun()
-
-st.markdown("---")
-
-# =====================================================================
-# 🔥 SISTEMA DE MULTIPLICADOR GLOBAL (ADICIONADO)
-# =====================================================================
-st.subheader("⚡ Multiplicadores Globais de Clique")
-st.write(f"Multiplicador Atual: **{st.session_state.multiplicador_global}x**")
-col_mult1, col_mult2, col_mult3, col_mult4 = st.columns(4)
-
-with col_mult1:
-    if st.button("Ativar 2x", use_container_width=True):
-        st.session_state.multiplicador_global = 2
-        atualizar_poder_clique()
-        salvar_progresso_atual()
-        st.rerun()
-
-with col_mult2:
-    if st.button("Ativar 3x", use_container_width=True):
-        st.session_state.multiplicador_global = 3
-        atualizar_poder_clique()
-        salvar_progresso_atual()
-        st.rerun()
-
-with col_mult3:
-    if st.button("Ativar 4x", use_container_width=True):
-        st.session_state.multiplicador_global = 4
-        atualizar_poder_clique()
-        salvar_progresso_atual()
-        st.rerun()
-
-with col_mult4:
-    if st.button("Ativar 5x", use_container_width=True):
-        st.session_state.multiplicador_global = 5
-        atualizar_poder_clique()
-        salvar_progresso_atual()
-        st.rerun()
 
 st.markdown("---")
 
@@ -768,7 +762,7 @@ st.write("(1.8.9) - Adição de 2 novos ovos(segundo mundo), 6 novos pets e corr
 st.write("(2.0.0) - Adição de Sistema de login com senha e correção de bugs")
 st.write("(2.1.1) - Sistema de salvamento de top global em tempo real, correção dos botões de ban, adicionar pontos e remover pontos(ADM) e correção de bugs")
 st.write("(2.2.0) - Adição do Sistema de Mensagem Global (Ferramenta 'msg') no painel de administração")
-st.write("(2.3.0) - Adição do Painel de Multiplicador Global de Cliques (2x, 3x, 4x, 5x)")
+st.write("(2.3.0) - Integração do Multiplicador Global (2x até 5x) direto no Painel de Admin")
 
 # --- 🏆 TABELA DE CLASSIFICAÇÃO GLOBAL (ATUALIZADA AUTOMATICAMENTE) ---
 st.markdown("---")
