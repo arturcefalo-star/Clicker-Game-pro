@@ -32,7 +32,6 @@ CUSTO_OVO_MUNDO_2_CARO = 500000000   # Custo do segundo ovo do Mundo 2
 # =====================================================================
 
 SENHA_ADMIN = "XXxx67xxXX"
-SENHA_ADMIN2 = "19371937"
 ACCOUNTS_FILE = "usuarios.json"
 LEADERBOARD_FILE = "leaderboard.json"
 AVISOS_FILE = "avisos.json"
@@ -368,7 +367,7 @@ if st.session_state.nome_usuario != "" and os.path.exists(LEADERBOARD_FILE):
 
 loja_em_cooldown = (time.time() - st.session_state.ultima_compra) < 0.6
 
-# --- BARRA LATERAL: LOGOUT, PAINEL ADMIN E TRAPAÇAS ---
+# --- BARRA LATERAL: LOGOUT E PAINEL ADMIN ---
 with st.sidebar:
     st.write(f"Conectado como: **{st.session_state.nome_usuario}**")
     if st.button("Sair da Conta (Logout)", type="secondary"):
@@ -381,10 +380,10 @@ with st.sidebar:
     st.markdown("---")
     st.header("⚙️ Painel de Admin")
     if st.checkbox("Ativar Modo Administrador"):
-        senha_input = st.text_input("Digite a senha de Admin:", type="password", key="pwd_admin")
+        senha_input = st.text_input("Digite a senha de Admin:", type="password")
         
         if len(senha_input) > 0 and senha_input == SENHA_ADMIN:
-            st.success("Success!")
+            st.success("Acesso Autorizado!")
             
             st.subheader("Gerenciar Placar Global")
             
@@ -398,7 +397,7 @@ with st.sidebar:
 
             if placar_completo:
                 for jogador in placar_completo:
-                    st.write(f" **{jogador['Jogador']}**: {jogador['Pontos']} pts")
+                    st.write(f"🏆 **{jogador['Jogador']}**: {jogador['Pontos']} pts")
             else:
                 st.info("Nenhum jogador registrado no placar ainda.")
                 
@@ -470,7 +469,7 @@ with st.sidebar:
                     st.markdown("---")
                     qtd_pontos = st.number_input("Quantidade de pontos (Add/Rem):", min_value=1, value=1000, step=100, key="qtd_pontos_adm")
 
-                    st.markdown(" **Ações Disponíveis:**")
+                    st.markdown("⚠️ **Ações Disponíveis:**")
                     col_adm1, col_adm2, col_adm3 = st.columns(3)
                     
                     if col_adm1.button("Ban", key=f"del_{key_inspect}", use_container_width=True):
@@ -616,40 +615,6 @@ with st.sidebar:
                 st.rerun()
                 
         elif senha_input != "":
-            st.error("Senha incorreta!")
-
-    # =====================================================================
-    # ✨ MENU DE TRAPAÇAS (FUNÇÕES BÁSICAS PARA SI MESMO)
-    # =====================================================================
-    st.markdown("---")
-    st.header("⚙️ Painel de Apoiador")
-    if st.checkbox("Ativar Modo Apoiador"):
-        senha_cheat = st.text_input("Digite a senha de Apoiador:", type="password", key="pwd_cheat")
-        
-        if len(senha_cheat) > 0 and senha_cheat == SENHA_ADMIN2:
-            st.success("Success! ")
-            
-            qtd_cheat = st.number_input("Quantidade de Pontos:", min_value=1, value=5000, step=500, key="qtd_cheat_val")
-            
-            col_ch1, col_ch2 = st.columns(2)
-            
-            if col_ch1.button("Add", use_container_width=True):
-                st.session_state.pontos += qtd_cheat
-                st.session_state.pontos_leaderboard_cache = st.session_state.pontos
-                salvar_progresso_atual()
-                st.success(f"+{qtd_cheat:,} pontos adicionados!")
-                time.sleep(0.4)
-                st.rerun()
-                
-            if col_ch2.button("Rem", use_container_width=True):
-                st.session_state.pontos = max(0, st.session_state.pontos - qtd_cheat)
-                st.session_state.pontos_leaderboard_cache = st.session_state.pontos
-                salvar_progresso_atual()
-                st.warning(f"{qtd_cheat:,} pontos removidos!")
-                time.sleep(0.4)
-                st.rerun()
-                
-        elif senha_cheat != "":
             st.error("Senha incorreta!")
 
 # --- CONTROLE DE VIAGEM ENTRE MUNDOS ---
