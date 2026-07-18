@@ -1,4 +1,4 @@
-import streamlit as st
+Import streamlit as st
 import time
 import random
 import json
@@ -67,8 +67,7 @@ def salvar_progresso_atual():
                 "pet_slot_m2_2": st.session_state.pet_slot_m2_2,
                 "ultimo_tick": st.session_state.ultimo_tick,
                 "mundo_2_desbloqueado": st.session_state.mundo_2_desbloqueado,
-                "mundo_atual": st.session_state.mundo_atual,
-                "multiplicador_global": st.session_state.multiplicador_global  # Salvando o multiplicador no JSON
+                "mundo_atual": st.session_state.mundo_atual
             }
             salvar_todos_usuarios(usuarios)
             atualizar_no_leaderboard(st.session_state.nome_usuario, st.session_state.pontos)
@@ -180,7 +179,6 @@ if not st.session_state.logado:
                 st.session_state.ultimo_tick = time.time()
                 st.session_state.mundo_2_desbloqueado = dados.get("mundo_2_desbloqueado", False)
                 st.session_state.mundo_atual = dados.get("mundo_atual", 1)
-                st.session_state.multiplicador_global = dados.get("multiplicador_global", 1) # Carregando multiplicador
                 st.session_state.pontos_leaderboard_cache = dados.get("pontos", 0)
                 
                 st.session_state.nome_usuario = usuarios[user_key]["nome_exibicao"]
@@ -215,8 +213,7 @@ if not st.session_state.logado:
                         "pontos": 0, "poder_base": 1, "pontos_por_segundo": 0,
                         "pet_slot_1": None, "pet_slot_2": None,
                         "pet_slot_m2_1": None, "pet_slot_m2_2": None,
-                        "ultimo_tick": time.time(), "mundo_2_desbloqueado": False, "mundo_atual": 1,
-                        "multiplicador_global": 1
+                        "ultimo_tick": time.time(), "mundo_2_desbloqueado": False, "mundo_atual": 1
                     }
                 }
                 salvar_todos_usuarios(usuarios)
@@ -230,8 +227,6 @@ if not st.session_state.logado:
 
 if "poder_clique" not in st.session_state:
     st.session_state.poder_clique = 1  
-if "multiplicador_global" not in st.session_state:
-    st.session_state.multiplicador_global = 1
 if "ultima_compra" not in st.session_state:
     st.session_state.ultima_compra = 0.0
 if "confirmando_reset" not in st.session_state:
@@ -249,9 +244,7 @@ def atualizar_poder_clique():
         bonus_total += st.session_state.pet_slot_m2_1["bonus"]
     if st.session_state.pet_slot_m2_2:
         bonus_total += st.session_state.pet_slot_m2_2["bonus"]
-    
-    # Aplica o multiplicador global gerenciado pelo admin
-    st.session_state.poder_clique = (st.session_state.poder_base + bonus_total) * st.session_state.multiplicador_global
+    st.session_state.poder_clique = st.session_state.poder_base + bonus_total
 
 atualizar_poder_clique()
 
@@ -332,8 +325,7 @@ with st.sidebar:
                                 "pontos": 0, "poder_base": 1, "pontos_por_segundo": 0,
                                 "pet_slot_1": None, "pet_slot_2": None,
                                 "pet_slot_m2_1": None, "pet_slot_m2_2": None,
-                                "ultimo_tick": time.time(), "mundo_2_desbloqueado": False, "mundo_atual": 1,
-                                "multiplicador_global": 1
+                                "ultimo_tick": time.time(), "mundo_2_desbloqueado": False, "mundo_atual": 1
                             }
                             salvar_todos_usuarios(usuarios_db)
                         
@@ -356,7 +348,6 @@ with st.sidebar:
                             st.session_state.pet_slot_m2_2 = None
                             st.session_state.mundo_2_desbloqueado = False
                             st.session_state.mundo_atual = 1
-                            st.session_state.multiplicador_global = 1
                             st.session_state.pontos_leaderboard_cache = 0
                             atualizar_poder_clique()
 
@@ -398,37 +389,6 @@ with st.sidebar:
             else:
                 st.info("Nenhum jogador registrado no placar ainda.")
                 
-            # =====================================================================
-            # 🔥 SISTEMA DE MULTIPLICADOR GLOBAL (DENTRO DO PAINEL DE ADMIN)
-            # =====================================================================
-            st.markdown("---")
-            st.subheader("⚡ Multiplicador Global")
-            st.write(f"Ativo no Servidor: **{st.session_state.multiplicador_global}x**")
-            
-            col_mult1, col_mult2 = st.columns(2)
-            with col_mult1:
-                if st.button("Ativar 2x", use_container_width=True, key="adm_mult_2"):
-                    st.session_state.multiplicador_global = 2
-                    atualizar_poder_clique()
-                    salvar_progresso_atual()
-                    st.rerun()
-                if st.button("Ativar 4x", use_container_width=True, key="adm_mult_4"):
-                    st.session_state.multiplicador_global = 4
-                    atualizar_poder_clique()
-                    salvar_progresso_atual()
-                    st.rerun()
-            with col_mult2:
-                if st.button("Ativar 3x", use_container_width=True, key="adm_mult_3"):
-                    st.session_state.multiplicador_global = 3
-                    atualizar_poder_clique()
-                    salvar_progresso_atual()
-                    st.rerun()
-                if st.button("Ativar 5x", use_container_width=True, key="adm_mult_5"):
-                    st.session_state.multiplicador_global = 5
-                    atualizar_poder_clique()
-                    salvar_progresso_atual()
-                    st.rerun()
-
             # --- FERRAMENTA MSG (MENSAGEM GLOBAL) ---
             st.markdown("---")
             st.subheader("📢 Ferramenta 'msg'")
@@ -505,7 +465,7 @@ if st.session_state.mundo_atual == 2:
     st.metric(label="Pontos Atuais", value=st.session_state.pontos)
     
     col_status1, col_status2 = st.columns(2)
-    col_status1.write(f"**Poder de clique:** {st.session_state.poder_clique * 2} (Mundo 2X)")
+    col_status1.write(f"**Poder de clique:** {st.session_state.poder_clique * 2} (2X)")
     col_status2.write(f"**Pontos por segundo:** {st.session_state.pontos_por_segundo}")
 
     st.markdown("---")
@@ -762,7 +722,6 @@ st.write("(1.8.9) - Adição de 2 novos ovos(segundo mundo), 6 novos pets e corr
 st.write("(2.0.0) - Adição de Sistema de login com senha e correção de bugs")
 st.write("(2.1.1) - Sistema de salvamento de top global em tempo real, correção dos botões de ban, adicionar pontos e remover pontos(ADM) e correção de bugs")
 st.write("(2.2.0) - Adição do Sistema de Mensagem Global (Ferramenta 'msg') no painel de administração")
-st.write("(2.3.0) - Integração do Multiplicador Global (2x até 5x) direto no Painel de Admin")
 
 # --- 🏆 TABELA DE CLASSIFICAÇÃO GLOBAL (ATUALIZADA AUTOMATICAMENTE) ---
 st.markdown("---")
@@ -795,8 +754,7 @@ else:
                     "pontos": 0, "poder_base": 1, "pontos_por_segundo": 0,
                     "pet_slot_1": None, "pet_slot_2": None,
                     "pet_slot_m2_1": None, "pet_slot_m2_2": None,
-                    "ultimo_tick": time.time(), "mundo_2_desbloqueado": False, "mundo_atual": 1,
-                    "multiplicador_global": 1
+                    "ultimo_tick": time.time(), "mundo_2_desbloqueado": False, "mundo_atual": 1
                 }
                 salvar_todos_usuarios(usuarios)
                 
