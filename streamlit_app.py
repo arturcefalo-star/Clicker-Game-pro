@@ -384,7 +384,7 @@ with st.sidebar:
         senha_input = st.text_input("Digite a senha de Admin:", type="password", key="pwd_admin")
         
         if len(senha_input) > 0 and senha_input == SENHA_ADMIN:
-            st.success("Acesso Autorizado!")
+            st.success("Success!")
             
             st.subheader("Gerenciar Placar Global")
             
@@ -622,9 +622,9 @@ with st.sidebar:
     # ✨ MENU DE TRAPAÇAS (FUNÇÕES BÁSICAS PARA SI MESMO)
     # =====================================================================
     st.markdown("---")
-    st.header("Ativar modo Apoiador do Administrador")
-    if st.checkbox("Ativar Modo Apoiador"):
-        senha_cheat = st.text_input("Digite a senha de Operador:", type="password", key="pwd_cheat")
+    st.header("Ativar modo Apoiador")
+    if st.checkbox("⚙️ Ativar Modo Apoiador"):
+        senha_cheat = st.text_input("Digite a senha de Apoiador:", type="password", key="pwd_cheat")
         
         if len(senha_cheat) > 0 and senha_cheat == SENHA_ADMIN2:
             st.success("Success! ")
@@ -633,7 +633,7 @@ with st.sidebar:
             
             col_ch1, col_ch2 = st.columns(2)
             
-            if col_ch1.button("✨ Dar Pontos", use_container_width=True):
+            if col_ch1.button("Add", use_container_width=True):
                 st.session_state.pontos += qtd_cheat
                 st.session_state.pontos_leaderboard_cache = st.session_state.pontos
                 salvar_progresso_atual()
@@ -641,7 +641,7 @@ with st.sidebar:
                 time.sleep(0.4)
                 st.rerun()
                 
-            if col_ch2.button("💥 Remover Pontos", use_container_width=True):
+            if col_ch2.button("Rem", use_container_width=True):
                 st.session_state.pontos = max(0, st.session_state.pontos - qtd_cheat)
                 st.session_state.pontos_leaderboard_cache = st.session_state.pontos
                 salvar_progresso_atual()
