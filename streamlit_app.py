@@ -34,6 +34,7 @@ CUSTO_OVO_MUNDO_2_CARO = 500000000   # Custo do segundo ovo do Mundo 2
 SENHA_ADMIN = "XXxx67xxXX"
 ACCOUNTS_FILE = "usuarios.json"
 LEADERBOARD_FILE = "leaderboard.json"
+AVISOS_FILE = "avisos.json"
 
 # --- FUNÇÕES DE GERENCIAMENTO DE USUÁRIOS E SALVAMENTO ---
 
@@ -126,6 +127,22 @@ def remover_jogador_leaderboard(nome):
             salvar_leaderboard_completo(novo)
         except Exception:
             pass
+
+# --- FUNÇÕES DO SISTEMA DE MENSAGEM GLOBAL ---
+def carregar_mensagem_global():
+    if os.path.exists(AVISOS_FILE):
+        try:
+            with open(AVISOS_FILE, "r", encoding="utf-8") as f:
+                dados = json.load(f)
+                return dados.get("mensagem", "")
+        except Exception:
+            return ""
+    return ""
+
+def salvar_mensagem_global(msg):
+    with open(AVISOS_FILE, "w", encoding="utf-8") as f:
+        json.dump({"mensagem": msg}, f, ensure_ascii=False, indent=4)
+
 
 # --- INICIALIZAÇÃO DE SESSÃO DO LOGIN ---
 if "logado" not in st.session_state:
@@ -302,9 +319,7 @@ with st.sidebar:
                     col_adm1, col_adm2, col_adm3, col_adm4 = st.columns([2, 1, 1, 1])
                     col_adm1.write(f"**{nome_jogador}**: {jogador['Pontos']} pts")
                     
-                    # --- CORREÇÃO DO BOTÃO BAN PARA PEGAR QUALQUE JOGADOR CORRETAMENTE ---
                     if col_adm2.button("Ban", key=f"del_{key_jogador}_{i}"):
-                        # 1. Reseta os dados no usuarios.json (Se a conta existir lá)
                         if key_jogador in usuarios_db:
                             usuarios_db[key_jogador]["dados"] = {
                                 "pontos": 0, "poder_base": 1, "pontos_por_segundo": 0,
@@ -314,15 +329,15 @@ with st.sidebar:
                             }
                             salvar_todos_usuarios(usuarios_db)
                         
-                        # 2. Reseta a pontuação diretamente no objeto correto da lista do placar global
                         for j in placar_completo:
                             if j["Jogador"].lower() == key_jogador:
-                                j["Pontos"] = 0
+                                j["Points"] = 0
+                                if "Pontos" in j:
+                                    j["Pontos"] = 0
                                 break
                                 
                         salvar_leaderboard_completo(placar_completo)
 
-                        # 3. Se o alvo do ban for o próprio administrador logado, limpa o state local imediatamente
                         if key_jogador == st.session_state.nome_usuario.lower():
                             st.session_state.pontos = 0
                             st.session_state.poder_base = 1
@@ -341,7 +356,8 @@ with st.sidebar:
                     if col_adm3.button("Add", key=f"add_{key_jogador}_{i}"):
                         for j in placar_completo:
                             if j["Jogador"].lower() == key_jogador:
-                                j["Pontos"] += qtd_pontos
+                                if "Pontos" in j: j["Pontos"] += qtd_pontos
+                                if "Points" in j: j["Points"] += qtd_pontos
                                 break
                         salvar_leaderboard_completo(placar_completo)
                         
@@ -357,7 +373,8 @@ with st.sidebar:
                     if col_adm4.button("Rem", key=f"rem_{key_jogador}_{i}"):
                         for j in placar_completo:
                             if j["Jogador"].lower() == key_jogador:
-                                j["Pontos"] = max(0, j["Pontos"] - qtd_pontos)
+                                if "Pontos" in j: j["Pontos"] = max(0, j["Pontos"] - qtd_pontos)
+                                if "Points" in j: j["Points"] = max(0, j["Points"] - qtd_pontos)
                                 break
                         salvar_leaderboard_completo(placar_completo)
                         
@@ -371,11 +388,34 @@ with st.sidebar:
                         st.rerun()
             else:
                 st.info("Nenhum jogador registrado no placar ainda.")
+                
+            # --- FERRAMENTA MSG (MENSAGEM GLOBAL) ---
+            st.markdown("---")
+            st.subheader("📢 Ferramenta 'msg'")
+            msg_atual = carregar_mensagem_global()
+            nova_msg = st.text_input("Texto do Comunicado Global:", value=msg_atual, placeholder="Digite o aviso geral aqui...")
+            
+            col_msg1, col_msg2 = st.columns(2)
+            if col_msg1.button("Enviar Mensagem", use_container_width=True):
+                salvar_mensagem_global(nova_msg)
+                st.success("Mensagem enviada!")
+                time.sleep(0.3)
+                st.rerun()
+                
+            if col_msg2.button("Apagar", type="secondary", use_container_width=True):
+                salvar_mensagem_global("")
+                st.rerun()
+                
         elif senha_input != "":
             st.error("Senha incorreta!")
 
 # --- CONTROLE DE VIAGEM ENTRE MUNDOS ---
 st.title("Clicker Game")
+
+# --- MONITOR DE EXIBIÇÃO DA MENSAGEM GLOBAL (PARA TODOS OS JOGADORES) ---
+aviso_sistema = carregar_mensagem_global()
+if aviso_sistema.strip() != "":
+    st.info(f"📢 **Mensagem Global:** {aviso_sistema}")
 
 CUSTO_MUNDO_2 = 10000000
 
@@ -681,6 +721,7 @@ st.write("(1.7.8) - Adição do segundo mundo!!! novas melhorias, nova interface
 st.write("(1.8.9) - Adição de 2 novos ovos(segundo mundo), 6 novos pets e correção de bugs")
 st.write("(2.0.0) - Adição de Sistema de login com senha e correção de bugs")
 st.write("(2.1.1) - Sistema de salvamento de top global em tempo real, correção dos botões de ban, adicionar pontos e remover pontos(ADM) e correção de bugs")
+st.write("(2.2.0) - Adição do Sistema de Mensagem Global (Ferramenta 'msg') no painel de administração")
 
 # --- 🏆 TABELA DE CLASSIFICAÇÃO GLOBAL (ATUALIZADA AUTOMATICAMENTE) ---
 st.markdown("---")
