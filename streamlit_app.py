@@ -53,12 +53,16 @@ def salvar_todos_usuarios(usuarios):
     with open(ACCOUNTS_FILE, "w", encoding="utf-8") as f:
         json.dump(usuarios, f, ensure_ascii=False, indent=4)
 
-def salvar_progresso_atual():
+def salvar_progresso_atual(usando_admin=None, usando_apoiador=None):
     if st.session_state.logado and st.session_state.nome_usuario:
         usuarios = carregar_todos_usuarios()
         username_key = st.session_state.nome_usuario.lower()
         
         if username_key in usuarios:
+            # Preserva ou atualiza o status de uso dos painéis
+            status_adm = usando_admin if usando_admin is not None else usuarios[username_key]["dados"].get("usando_admin", False)
+            status_apo = usando_apoiador if usando_apoiador is not None else usuarios[username_key]["dados"].get("usando_apoiador", False)
+            
             usuarios[username_key]["dados"] = {
                 "pontos": st.session_state.pontos,
                 "poder_base": st.session_state.poder_base,
@@ -69,7 +73,9 @@ def salvar_progresso_atual():
                 "pet_slot_m2_2": st.session_state.pet_slot_m2_2,
                 "ultimo_tick": st.session_state.ultimo_tick,
                 "mundo_2_desbloqueado": st.session_state.mundo_2_desbloqueado,
-                "mundo_atual": st.session_state.mundo_atual
+                "mundo_atual": st.session_state.mundo_atual,
+                "usando_admin": status_adm,
+                "usando_apoiador": status_apo
             }
             salvar_todos_usuarios(usuarios)
             atualizar_no_leaderboard(st.session_state.nome_usuario, st.session_state.pontos)
@@ -264,7 +270,8 @@ if not st.session_state.logado:
                         "pontos": 0, "poder_base": 1, "pontos_por_segundo": 0,
                         "pet_slot_1": None, "pet_slot_2": None,
                         "pet_slot_m2_1": None, "pet_slot_m2_2": None,
-                        "ultimo_tick": time.time(), "mundo_2_desbloqueado": False, "mundo_atual": 1
+                        "ultimo_tick": time.time(), "mundo_2_desbloqueado": False, "mundo_atual": 1,
+                        "usando_admin": False, "usando_apoiador": False
                     }
                 }
                 salvar_todos_usuarios(usuarios)
@@ -372,7 +379,8 @@ loja_em_cooldown = (time.time() - st.session_state.ultima_compra) < 0.6
 with st.sidebar:
     st.write(f"Conectado como: **{st.session_state.nome_usuario}**")
     if st.button("Sair da Conta (Logout)", type="secondary"):
-        salvar_progresso_atual()
+        # Força desativação dos painéis ao deslogar
+        salvar_progresso_atual(usando_admin=False, usando_apoiador=False)
         limpar_sessao_ativa()  
         st.session_state.logado = False
         st.session_state.nome_usuario = ""
@@ -380,11 +388,53 @@ with st.sidebar:
         
     st.markdown("---")
     st.header("⚙️ Painel de Admin")
-    if st.checkbox("Ativar Modo Administrador"):
+    modo_admin_chk = st.checkbox("Ativar Modo Administrador")
+    
+    # Se o checkbox for desmarcado voluntariamente, remove o status do JSON
+    if not modo_admin_chk:
+        usuarios_db = carregar_todos_usuarios()
+        ukey = st.session_state.nome_usuario.lower()
+        if ukey in usuarios_db and usuarios_db[ukey]["dados"].get("usando_admin", False):
+            salvar_progresso_atual(usando_admin=False)
+            st.rerun()
+            
+    if modo_admin_chk:
         senha_input = st.text_input("Digite a senha de Admin:", type="password", key="pwd_admin")
         
         if len(senha_input) > 0 and senha_input == SENHA_ADMIN:
+            # Registra que o jogador está autenticado como administrador
+            usuarios_db = carregar_todos_usuarios()
+            ukey = st.session_state.nome_usuario.lower()
+            if ukey in usuarios_db and not usuarios_db[ukey]["dados"].get("usando_admin", False):
+                salvar_progresso_atual(usando_admin=True)
+                st.rerun()
+                
             st.success("Success!")
+            
+            # =====================================================================
+            # 🕵️‍♂️ MONITOR DE UTILIZADORES DOS PAINÉIS (EXCLUSIVO DO ADM)
+            # =====================================================================
+            st.markdown("---")
+            st.subheader("👁️ Monitor de Painéis")
+            db_usuarios = carregar_todos_usuarios()
+            adms_ativos = [db_usuarios[k]["nome_exibicao"] for k in db_usuarios if db_usuarios[k]["dados"].get("usando_admin", False)]
+            apoiadores_ativos = [db_usuarios[k]["nome_exibicao"] for k in db_usuarios if db_usuarios[k]["dados"].get("usando_apoiador", False)]
+            
+            st.write("**Utilizadores do painel de Admin:**")
+            if adms_ativos:
+                for adm in adms_ativos:
+                    st.code(f"• {adm}", language="text")
+            else:
+                st.caption("Nenhum no momento.")
+                
+            st.write("**Utilizadores do painel de Apoiador:**")
+            if apoiadores_ativos:
+                for apo in apoiadores_ativos:
+                    st.code(f"• {apo}", language="text")
+            else:
+                st.caption("Nenhum no momento.")
+            st.markdown("---")
+            # =====================================================================
             
             st.subheader("Gerenciar Placar Global")
             
@@ -479,7 +529,8 @@ with st.sidebar:
                                 "pontos": 0, "poder_base": 1, "pontos_por_segundo": 0,
                                 "pet_slot_1": None, "pet_slot_2": None,
                                 "pet_slot_m2_1": None, "pet_slot_m2_2": None,
-                                "ultimo_tick": time.time(), "mundo_2_desbloqueado": False, "mundo_atual": 1
+                                "ultimo_tick": time.time(), "mundo_2_desbloqueado": False, "mundo_atual": 1,
+                                "usando_admin": False, "usando_apoiador": False
                             }
                             salvar_todos_usuarios(usuarios_db_inspect)
                         
@@ -623,10 +674,27 @@ with st.sidebar:
     # =====================================================================
     st.markdown("---")
     st.header("⚙️ Painel de Apoiador")
-    if st.checkbox("Ativar Modo Apoiador"):
+    modo_apoiador_chk = st.checkbox("Ativar Modo Apoiador")
+    
+    # Se o checkbox for desmarcado voluntariamente, remove o status do JSON
+    if not modo_apoiador_chk:
+        usuarios_db = carregar_todos_usuarios()
+        ukey = st.session_state.nome_usuario.lower()
+        if ukey in usuarios_db and usuarios_db[ukey]["dados"].get("usando_apoiador", False):
+            salvar_progresso_atual(usando_apoiador=False)
+            st.rerun()
+            
+    if modo_apoiador_chk:
         senha_cheat = st.text_input("Digite a senha de Apoiador:", type="password", key="pwd_cheat")
         
         if len(senha_cheat) > 0 and senha_cheat == SENHA_ADMIN2:
+            # Registra que o jogador está autenticado como apoiador
+            usuarios_db = carregar_todos_usuarios()
+            ukey = st.session_state.nome_usuario.lower()
+            if ukey in usuarios_db and not usuarios_db[ukey]["dados"].get("usando_apoiador", False):
+                salvar_progresso_atual(usando_apoiador=True)
+                st.rerun()
+                
             st.success("Success! ")
             
             qtd_cheat = st.number_input("Quantidade de Pontos:", min_value=1, value=5000, step=500, key="qtd_cheat_val")
@@ -964,6 +1032,7 @@ st.write("(2.2.2) - Adição do Sistema de Mensagem Global (ADM)")
 st.write("(2.3.3) - Adição de novas funções de multiplicação de sorte e dinheiro (ADM)")
 st.write("(2.4.4) - Adição do Sistema de Inspeção de Jogadores (ADM)")
 st.write("(2.5.5) - Remoção do login toda hora que você entrar")
+st.write("(2.6.0) - Adição do Sistema de Monitoramento de Painéis em Tempo Real (ADM)")
 
 # --- 🏆 TABELA DE CLASSIFICAÇÃO GLOBAL ---
 st.markdown("---")
@@ -997,7 +1066,8 @@ else:
                     "pontos": 0, "poder_base": 1, "pontos_por_segundo": 0,
                     "pet_slot_1": None, "pet_slot_2": None,
                     "pet_slot_m2_1": None, "pet_slot_m2_2": None,
-                    "ultimo_tick": time.time(), "mundo_2_desbloqueado": False, "mundo_atual": 1
+                    "ultimo_tick": time.time(), "mundo_2_desbloqueado": False, "mundo_atual": 1,
+                    "usando_admin": False, "usando_apoiador": False
                 }
                 salvar_todos_usuarios(usuarios)
                 
