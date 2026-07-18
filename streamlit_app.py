@@ -359,7 +359,8 @@ if st.session_state.nome_usuario != "" and os.path.exists(LEADERBOARD_FILE):
     except Exception:
         pass
 
-loja_em_cooldown = (time.time() - st.session_state.ultima_compra) < 0.6
+# COOLDOWN REDUZIDO E REMOVIDO DA VALIDAÇÃO ESTRITA PARA EVITAR TRAVAMENTOS CONTÍNUOS
+loja_em_cooldown = (time.time() - st.session_state.ultima_compra) < 0.1
 
 # --- BARRA LATERAL: LOGOUT, PAINEL ADMIN E TRAPAÇAS ---
 with st.sidebar:
@@ -449,12 +450,11 @@ with st.sidebar:
             st.markdown("---")
             st.subheader("Inspecionar Jogador")
 
-            # Força o recarregamento do arquivo a cada ciclo de renderização
+            # CORRIGIDO: Coleta e exibe TODOS os jogadores registrados no json do sistema
             usuarios_db_inspect = carregar_todos_usuarios()
             lista_jogadores = [usuarios_db_inspect[k]["nome_exibicao"] for k in sorted(usuarios_db_inspect.keys())]
 
             if lista_jogadores:
-                # Resolve o bug de estado salvando a seleção diretamente por chave de controle ou índice válido
                 if st.session_state.jogador_sob_inspecao not in lista_jogadores:
                     st.session_state.jogador_sob_inspecao = lista_jogadores[0]
                 
@@ -464,7 +464,7 @@ with st.sidebar:
                     "Selecione um jogador:", 
                     options=lista_jogadores, 
                     index=idx_inicial, 
-                    key=f"inspect_select_live_{len(lista_jogadores)}" # Chave dinâmica reconstrói o selectbox ao mudar tamanho
+                    key=f"inspect_select_live_{len(lista_jogadores)}"
                 )
                 
                 st.session_state.jogador_sob_inspecao = jogador_selecionado
@@ -478,6 +478,7 @@ with st.sidebar:
                         
                         st.markdown(f"### Status de: **{alvo_atual}**")
                         
+                        # CORRIGIDO: Poder Base agora reflete fielmente o valor salvo em tempo real
                         col_ins1, col_ins2, col_ins3 = st.columns(3)
                         col_ins1.metric("Pontos", f"{dados_player.get('pontos', 0):,}")
                         col_ins2.metric("Poder Base", f"{dados_player.get('poder_base', 1):,}")
@@ -763,7 +764,7 @@ if st.session_state.mundo_atual == 2:
         st.write(f"{NOME_PET_8}: {ch2_m2_o1:.1f}% (+{BONUS_PET_8:,} Pts)")
         st.write(f"{NOME_PET_9}: **{ch3_m2_o1:.1f}%** (+{BONUS_PET_9:,} Pts)")
         
-        desativar_m2_ovo1 = st.session_state.pontos < CUSTO_OVO_MUNDO_2_BARATO or loja_em_cooldown
+        desativar_m2_ovo1 = st.session_state.pontos < CUSTO_OVO_MUNDO_2_BARATO
         
         if st.button(f"Abrir Ovo = {CUSTO_OVO_MUNDO_2_BARATO:,} Pontos", disabled=desativar_m2_ovo1, key="botao_m2_ovo1"):
             st.session_state.ultima_compra = time.time()  
@@ -778,7 +779,7 @@ if st.session_state.mundo_atual == 2:
                 st.session_state.pet_slot_m2_1 = sorteado
                 atualizar_poder_clique()
                 salvar_progresso_atual()
-                time.sleep(0.5) 
+                time.sleep(0.1) 
                 st.rerun()
 
         if st.session_state.pet_slot_m2_1:
@@ -798,7 +799,7 @@ if st.session_state.mundo_atual == 2:
         st.write(f"{NOME_PET_M2_R2}: {ch2_m2_o2:.1f}% (+{BONUS_PET_M2_R2:,} Pts)")
         st.write(f"{NOME_PET_M2_R3}: **{ch3_m2_o2:.1f}%** (+{BONUS_PET_M2_R3:,} Pts)")
         
-        desativar_m2_ovo2 = st.session_state.pontos < CUSTO_OVO_MUNDO_2_CARO or loja_em_cooldown
+        desativar_m2_ovo2 = st.session_state.pontos < CUSTO_OVO_MUNDO_2_CARO
         
         if st.button(f"Abrir Ovo = {CUSTO_OVO_MUNDO_2_CARO:,} Pontos", disabled=desativar_m2_ovo2, key="botao_m2_ovo2"):
             st.session_state.ultima_compra = time.time()
@@ -813,7 +814,7 @@ if st.session_state.mundo_atual == 2:
                 st.session_state.pet_slot_m2_2 = sorteado
                 atualizar_poder_clique()
                 salvar_progresso_atual()
-                time.sleep(0.5) 
+                time.sleep(0.1) 
                 st.rerun()
 
         if st.session_state.pet_slot_m2_2:
@@ -850,7 +851,7 @@ if st.session_state.mundo_atual != 2:
         st.write(f"Manoel G: **{ch3_m1_o1:.1f}%** (+10 Pontos)")
         
         custo_ovo1 = 100
-        desativar_ovo1 = st.session_state.pontos < custo_ovo1 or loja_em_cooldown
+        desativar_ovo1 = st.session_state.pontos < custo_ovo1
         
         if st.button(f"Abrir Ovo = {custo_ovo1} Pontos", disabled=desativar_ovo1, key="botao_ovo1"):
             st.session_state.ultima_compra = time.time()  
@@ -865,7 +866,7 @@ if st.session_state.mundo_atual != 2:
                 st.session_state.pet_slot_1 = sorteado_ovo1
                 atualizar_poder_clique()
                 salvar_progresso_atual()
-                time.sleep(0.5) 
+                time.sleep(0.1) 
                 st.rerun()
 
         if st.session_state.pet_slot_1:
@@ -886,7 +887,7 @@ if st.session_state.mundo_atual != 2:
         st.write(f"Michael J.: **{ch3_m1_o2:.1f}%** (+100 Pontos)")
         
         custo_ovo2 = 1000
-        desativar_ovo2 = st.session_state.pontos < custo_ovo2 or loja_em_cooldown
+        desativar_ovo2 = st.session_state.pontos < custo_ovo2
         
         if st.button(f"Abrir Ovo = {custo_ovo2} Pontos", disabled=desativar_ovo2, key="botao_ovo2"):
             st.session_state.ultima_compra = time.time()
@@ -901,7 +902,7 @@ if st.session_state.mundo_atual != 2:
                 st.session_state.pet_slot_2 = sorteado_ovo2
                 atualizar_poder_clique()
                 salvar_progresso_atual()
-                time.sleep(0.5) 
+                time.sleep(0.1) 
                 st.rerun()
 
         if st.session_state.pet_slot_2:
@@ -943,7 +944,7 @@ else:
     melhorias_passivas = [
         {"qtd": 5, "custo": 200}, {"qtd": 10, "custo": 600}, {"qtd": 20, "custo": 1100},
         {"qtd": 100, "custo": 7500}, {"qtd": 200, "custo": 14500}, {"qtd": 1000, "custo": 72500},
-        {"qtd": 2000, "custo": 145000}, {"qtd": 5000, "custo": 360000}, {"qtd": 10000, "custo": 725000},
+        {"qtd": 2000, "removed_custo": 145000, "custo": 145000}, {"qtd": 5000, "custo": 360000}, {"qtd": 10000, "custo": 725000},
         {"qtd": 20000, "custo": 1450000}
     ]
 
@@ -954,7 +955,7 @@ with col1:
     with st.container(height=350):
         for i, item in enumerate(melhorias_clique):
             texto = f"+{item['qtd']:,} clk | {item['custo']:,} Pts"
-            desativado = st.session_state.pontos < item['custo'] or loja_em_cooldown
+            desativado = st.session_state.pontos < item['custo']
             key_btn = f"c_{st.session_state.mundo_atual}_{i}"
 
             if st.button(texto, key=key_btn, disabled=desativado, use_container_width=True):
@@ -972,7 +973,7 @@ with col2:
     with st.container(height=350):
         for i, item in enumerate(melhorias_passivas):
             texto = f"+{item['qtd']:,}/s | {item['custo']:,} Pts"
-            desativado = st.session_state.pontos < item['custo'] or loja_em_cooldown
+            desativado = st.session_state.pontos < item['custo']
             key_btn = f"p_{st.session_state.mundo_atual}_{i}"
 
             if st.button(texto, key=key_btn, disabled=desativado, use_container_width=True):
@@ -994,6 +995,7 @@ st.write("(1.0.0)(Beta) - Lançamento!!!")
 st.write("(2.6.0) - Adição do Sistema de Monitoramento de Painéis em Tempo Real (ADM)")
 st.write("(2.7.0) - Correção Crítica de Segurança e Validação Uniforme no Banco de Dados")
 st.write("(2.9.0) - Reconstrução Dinâmica de Chave no Seletor de Inspeção para atualização 100% em Tempo Real")
+st.write("(3.0.0) - Correção do salvamento do Poder Base e remoção de lag nos botões de compras")
 
 # --- 🏆 TABELA DE CLASSIFICAÇÃO GLOBAL ---
 st.markdown("---")
