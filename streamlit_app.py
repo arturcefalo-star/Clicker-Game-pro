@@ -804,7 +804,7 @@ if st.session_state.mundo_atual != 2:
         st.write("### Ovo Raro:")
         st.write(f"Dora A.: {ch1_m1_o2:.1f}% (+10 Pontos)")
         st.write(f"Sonic: {ch2_m1_o2:.1f}% (+50 Pontos)")
-        st.write(f"Michael J.: **{ch3_m1_o2:.1f}%** (+100 Pontos) 🍀")
+        st.write(f"Michael J.: **{ch3_m1_o2:.1f}%** (+100 Pontos)")
         
         custo_ovo2 = 1000
         desativar_ovo2 = st.session_state.pontos < custo_ovo2 or loja_em_cooldown
