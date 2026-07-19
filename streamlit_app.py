@@ -31,7 +31,7 @@ BONUS_PET_M2_R3 = 50000000
 CUSTO_OVO_MUNDO_2_CARO = 500000000   # Custo do segundo ovo do Mundo 2
 # =====================================================================
 
-SENHA_DEV = "<<==67==>>"  # 🔐 SENHA DO DEV (O formato da Admin, mas aprimorada)
+SENHA_DEV = "<<==67==>>"  
 SENHA_ADMIN = "XXxx67xxXX"
 SENHA_APOIADOR = "67AP0IO67"  
 ACCOUNTS_FILE = "usuarios.json"
@@ -80,7 +80,8 @@ def salvar_progresso_atual():
                 "ultimo_tick": st.session_state.ultimo_tick,
                 "mundo_2_desbloqueado": st.session_state.mundo_2_desbloqueado,
                 "mundo_atual": st.session_state.mundo_atual,
-                "titulo": usuarios[username_key]["dados"].get("titulo", "")
+                "titulo": usuarios[username_key]["dados"].get("titulo", ""),
+                "cristais": st.session_state.cristais
             }
             usuarios[username_key]["ultimo_login"] = time.strftime("%Y-%m-%d %H:%M:%S")
             salvar_todos_usuarios(usuarios)
@@ -194,6 +195,7 @@ def resetar_estados_jogador_local():
     st.session_state.mundo_2_desbloqueado = False
     st.session_state.mundo_atual = 1
     st.session_state.titulo = ""
+    st.session_state.cristais = 0
     st.session_state.pontos_leaderboard_cache = 0
     atualizar_poder_clique()
 
@@ -221,6 +223,7 @@ if not st.session_state.logado:
             st.session_state.mundo_2_desbloqueado = dados.get("mundo_2_desbloqueado", False)
             st.session_state.mundo_atual = dados.get("mundo_atual", 1)
             st.session_state.titulo = dados.get("titulo", "")
+            st.session_state.cristais = dados.get("cristais", 0)
             st.session_state.pontos_leaderboard_cache = dados.get("pontos", 0)
             st.session_state.nome_usuario = usuarios[usuario_salvo]["nome_exibicao"]
             st.session_state.logado = True
@@ -256,6 +259,7 @@ if not st.session_state.logado:
                 st.session_state.mundo_2_desbloqueado = dados.get("mundo_2_desbloqueado", False)
                 st.session_state.mundo_atual = dados.get("mundo_atual", 1)
                 st.session_state.titulo = dados.get("titulo", "")
+                st.session_state.cristais = dados.get("cristais", 0)
                 st.session_state.pontos_leaderboard_cache = dados.get("pontos", 0)
                 
                 st.session_state.nome_usuario = usuarios[user_key]["nome_exibicao"]
@@ -297,7 +301,7 @@ if not st.session_state.logado:
                         "pet_slot_1": None, "pet_slot_2": None,
                         "pet_slot_m2_1": None, "pet_slot_m2_2": None,
                         "ultimo_tick": time.time(), "mundo_2_desbloqueado": False, "mundo_atual": 1,
-                        "titulo": ""
+                        "titulo": "", "cristais": 0
                     }
                 }
                 salvar_todos_usuarios(usuarios)
@@ -319,6 +323,8 @@ if "pontos_leaderboard_cache" not in st.session_state:
     st.session_state.pontos_leaderboard_cache = st.session_state.pontos
 if "ultimo_tick" not in st.session_state:
     st.session_state.ultimo_tick = time.time()
+if "cristais" not in st.session_state:
+    st.session_state.cristais = 0
 
 usuarios_temp = carregar_todos_usuarios()
 user_key_temp = st.session_state.nome_usuario.lower()
@@ -335,7 +341,12 @@ mult_sorte = config_globais.get("multiplicador_sorte", 1)
 def calcular_bonus_pet(pet):
     if not pet:
         return 0
-    return pet["bonus"]
+    nivel = pet.get("nivel", 1)
+    return pet["bonus"] * nivel
+
+def obter_multiplicador_cristal():
+    # Cada cristal fornece +50% de bônus global (1 + 0.5 * cristais)
+    return 1.0 + (0.5 * st.session_state.cristais)
 
 def atualizar_poder_clique():
     bonus_total = 0
@@ -344,8 +355,9 @@ def atualizar_poder_clique():
     bonus_total += calcular_bonus_pet(st.session_state.pet_slot_m2_1)
     bonus_total += calcular_bonus_pet(st.session_state.pet_slot_m2_2)
     
-    poder_calculado = st.session_state.poder_base + bonus_total
-    st.session_state.poder_clique = poder_calculado * mult_evento
+    mult_prestige = obter_multiplicador_cristal()
+    poder_calculado = (st.session_state.poder_base + bonus_total) * mult_prestige
+    st.session_state.poder_clique = int(poder_calculado * mult_evento)
 
 def calcular_chances_ovo(c1, c2, c3_base):
     c3_atual = min(c3_base * mult_sorte, 90)
@@ -367,12 +379,16 @@ def renderizar_area_clique():
 
     if tempo_passado >= 1.0:
         ciclos = int(tempo_passado)
-        st.session_state.pontos += st.session_state.pontos_por_segundo * ciclos
+        mult_prestige = obter_multiplicador_cristal()
+        pontos_passivos = int(st.session_state.pontos_por_segundo * mult_prestige)
+        st.session_state.pontos += pontos_passivos * ciclos
         st.session_state.ultimo_tick = agora - (tempo_passado - ciclos)
         st.session_state.pontos_leaderboard_cache = st.session_state.pontos
         salvar_progresso_atual()
 
-    st.metric(label="Pontos Atuais", value=f"{st.session_state.pontos:,}")
+    col_m1, col_m2 = st.columns(2)
+    col_m1.metric(label="Pontos Atuais", value=f"{st.session_state.pontos:,}")
+    col_m2.metric(label="🔮 Cristais de Renascimento", value=f"{st.session_state.cristais:,}", help=f"Bônus de produção atual: +{int((obter_multiplicador_cristal()-1)*100)}%")
     
     if st.session_state.mundo_atual == 2:
         if st.button("            Click Here          ", key="click_m2_btn", use_container_width=True):
@@ -387,7 +403,8 @@ def renderizar_area_clique():
             salvar_progresso_atual()
         st.write(f"**Poder de clique:** {st.session_state.poder_clique:,}")
         
-    st.write(f"**Pontos por segundo:** {st.session_state.pontos_por_segundo:,}")
+    mult_prestige = obter_multiplicador_cristal()
+    st.write(f"**Pontos por segundo:** {int(st.session_state.pontos_por_segundo * mult_prestige):,} (Base: {st.session_state.pontos_por_segundo:,})")
 
 if st.session_state.nome_usuario != "" and os.path.exists(LEADERBOARD_FILE):
     try:
@@ -419,7 +436,7 @@ with st.sidebar:
         
     st.markdown("---")
 
-    # 💻 PAINEL DE DE DEVE (FORMATADO IGUAL AO DE ADMIN, COM SENHA MELHORADA)
+    # 💻 PAINEL DE DE DEVE 
     st.header("⚙️ Painel de Desenvolvedor")
     exibir_painel_dev = False
     
@@ -460,7 +477,7 @@ with st.sidebar:
                 
                 col_dev_pts, col_dev_clk, col_dev_pps, col_dev_t, col_dev_ban = st.columns([1, 1, 1, 1.2, 0.8])
                 
-                if col_dev_pts.button("Pontos", key=f"dev_pts_{key_jogador}_{i}", help="Injeta pontos"):
+                if col_dev_pts.button("Pontos", key=f"dev_pts_{key_jogador}_{i}"):
                     if key_jogador in usuarios_db_dev:
                         usuarios_db_dev[key_jogador]["dados"]["pontos"] = max(0, usuarios_db_dev[key_jogador]["dados"].get("pontos", 0) + qtd_alteracao)
                         salvar_todos_usuarios(usuarios_db_dev)
@@ -474,7 +491,7 @@ with st.sidebar:
                     salvar_leaderboard_completo(placar_completo_dev)
                     st.rerun()
                     
-                if col_dev_clk.button("Poder/C", key=f"dev_clk_{key_jogador}_{i}", help="Injeta Poder Base de clique"):
+                if col_dev_clk.button("Poder/C", key=f"dev_clk_{key_jogador}_{i}"):
                     if key_jogador in usuarios_db_dev:
                         usuarios_db_dev[key_jogador]["dados"]["poder_base"] = max(1, usuarios_db_dev[key_jogador]["dados"].get("poder_base", 1) + qtd_alteracao)
                         salvar_todos_usuarios(usuarios_db_dev)
@@ -484,7 +501,7 @@ with st.sidebar:
                     st.success("Poder de clique updated!")
                     st.rerun()
 
-                if col_dev_pps.button("Pontos/s", key=f"dev_pps_{key_jogador}_{i}", help="Injetar pontos por segundo"):
+                if col_dev_pps.button("Pontos/s", key=f"dev_pps_{key_jogador}_{i}"):
                     if key_jogador in usuarios_db_dev:
                         usuarios_db_dev[key_jogador]["dados"]["pontos_por_segundo"] = max(0, usuarios_db_dev[key_jogador]["dados"].get("pontos_por_segundo", 0) + qtd_alteracao)
                         salvar_todos_usuarios(usuarios_db_dev)
@@ -511,7 +528,7 @@ with st.sidebar:
                             time.sleep(0.3)
                             st.rerun()
 
-                if col_dev_ban.button("Ban", key=f"dev_ban_{key_jogador}_{i}", help="Banimento permanente"):
+                if col_dev_ban.button("Ban", key=f"dev_ban_{key_jogador}_{i}"):
                     if key_jogador in usuarios_db_dev:
                         del usuarios_db_dev[key_jogador]
                         salvar_todos_usuarios(usuarios_db_dev)
@@ -525,7 +542,7 @@ with st.sidebar:
         else:
             st.info("Placar vazio.")
 
-        # 🔍 MOVIDO DO PAINEL ADMIN PARA O PAINEL D
+        st.markdown("---")
         st.subheader("Inspecionar Jogador")
 
         usuarios_db_inspect = carregar_todos_usuarios()
@@ -547,6 +564,7 @@ with st.sidebar:
                 col_ins2.metric("Poder Base", f"{dados_player.get('poder_base', 1):,}")
                 col_ins3.metric("Pontos/Seg", f"{dados_player.get('pontos_por_segundo', 0):,}")
                 
+                st.write(f"🔮 **Cristais:** {dados_player.get('cristais', 0)}")
                 mundo_txt = "Mundo 2" if dados_player.get("mundo_atual", 1) == 2 else "Mundo 1"
                 m2_liberado = "Sim" if dados_player.get("mundo_2_desbloqueado", False) else "Não"
                 st.write(f" **Mundo Atual:** {mundo_txt} |  **Mundo 2 Desbloqueado?** {m2_liberado}")
@@ -557,20 +575,20 @@ with st.sidebar:
                     st.write("**Mundo 1 Slots:**")
                     p1 = dados_player.get("pet_slot_1")
                     p2 = dados_player.get("pet_slot_2")
-                    st.write(f"Slot 1: {p1['nome']} (+{p1['bonus']:,})" if p1 else "Slot 1: Vazio")
-                    st.write(f"Slot 2: {p2['nome']} (+{p2['bonus']:,})" if p2 else "Slot 2: Vazio")
+                    st.write(f"Slot 1: {p1['nome']} (Nível {p1.get('nivel', 1)})" if p1 else "Slot 1: Vazio")
+                    st.write(f"Slot 2: {p2['nome']} (Nível {p2.get('nivel', 1)})" if p2 else "Slot 2: Vazio")
                 with col_p2:
                     st.write("**Mundo 2 Slots:**")
                     pm1 = dados_player.get("pet_slot_m2_1")
                     pm2 = dados_player.get("pet_slot_m2_2")
-                    st.write(f"Slot 1: {pm1['nome']} (+{pm1['bonus']:,})" if pm1 else "Slot 1: Vazio")
-                    st.write(f"Slot 2: {pm2['nome']} (+{pm2['bonus']:,})" if pm2 else "Slot 2: Vazio")
+                    st.write(f"Slot 1: {pm1['nome']} (Nível {pm1.get('nivel', 1)})" if pm1 else "Slot 1: Vazio")
+                    st.write(f"Slot 2: {pm2['nome']} (Nível {pm2.get('nivel', 1)})" if pm2 else "Slot 2: Vazio")
         else:
             st.info("Nenhuma conta cadastrada no banco de dados ainda.")
         
     st.markdown("---")
     
-    # ⚙️ PAINEL DE ADMIN (SEM BANIR OU EDITAR TÍTULO)
+    # ⚙️ PAINEL DE ADMIN 
     st.header("⚙️ Painel de Admin")
     acesso_admin = tem_titulo("ADM") or tem_titulo("DEV")
     exibir_painel_admin = False
@@ -828,253 +846,333 @@ else:
 
 st.markdown("---")
 
-# --- CONTEÚDO DINÂMICO DOS MUNDOS ---
-if st.session_state.mundo_atual == 2:
-    st.subheader("Segundo mundo")
-    st.info("2X de multiplicador de mundo")
+# Aba Jogo Principal, Evolução de Pets e Renascimento
+abas_principais = st.tabs(["🎮 Jogo Principal", "🧬 Evolução de Pets", "🔮 Templo de Renascimento"])
+
+with abas_principais[0]:
+    # --- CONTEÚDO DINÂMICO DOS MUNDOS ---
+    if st.session_state.mundo_atual == 2:
+        st.subheader("Segundo mundo")
+        st.info("2X de multiplicador de mundo")
+        
+        st.write("Trilha sonora: on/off")
+        try:
+            st.audio("musica67.mp3") 
+        except Exception:
+            pass
+
+        renderizar_area_clique()
+        st.markdown("---")
+        st.subheader("Comprar ovos:")
+        col_m2_egg1, col_m2_egg2 = st.columns(2)
+
+        ch1_m2_o1, ch2_m2_o1, ch3_m2_o1 = calcular_chances_ovo(50, 35, 15)
+
+        with col_m2_egg1:
+            st.write("### Ovo Épico:")
+            st.write(f"{NOME_PET_7}: {ch1_m2_o1:.1f}% (+{BONUS_PET_7:,} Pts)")
+            st.write(f"{NOME_PET_8}: {ch2_m2_o1:.1f}% (+{BONUS_PET_8:,} Pts)")
+            st.write(f"{NOME_PET_9}: **{ch3_m2_o1:.1f}%** (+{BONUS_PET_9:,} Pts)")
+            
+            desativar_m2_ovo1 = st.session_state.pontos < CUSTO_OVO_MUNDO_2_BARATO or loja_em_cooldown
+            if st.button(f"Abrir Ovo = {CUSTO_OVO_MUNDO_2_BARATO:,} Pontos", disabled=desativar_m2_ovo1, key="botao_m2_ovo1"):
+                if st.session_state.pontos >= CUSTO_OVO_MUNDO_2_BARATO:
+                    st.session_state.pontos -= CUSTO_OVO_MUNDO_2_BARATO
+                    sorteado = random.choices(
+                       [{"nome": NOME_PET_7, "arquivo": "logo7.png", "bonus": BONUS_PET_7, "chance": "50%", "nivel": 1}, 
+                        {"nome": NOME_PET_8, "arquivo": "logo8.png", "bonus": BONUS_PET_8, "chance": "35%", "nivel": 1},
+                        {"nome": NOME_PET_9, "arquivo": "logo9.png", "bonus": BONUS_PET_9, "chance": "15%", "nivel": 1}],
+                       weights=[ch1_m2_o1, ch2_m2_o1, ch3_m2_o1], k=1
+                    )[0]
+                    st.session_state.pet_slot_m2_1 = sorteado
+                    atualizar_poder_clique()
+                    st.session_state.ultima_compra = 0.0  
+                    salvar_progresso_atual()
+                    time.sleep(0.5) 
+                    st.rerun()
+
+            if st.session_state.pet_slot_m2_1:
+                pet = st.session_state.pet_slot_m2_1
+                st.write(f"**Pet Equipado (Nível {pet.get('nivel', 1)}):**")
+                try:
+                    st.image(pet["arquivo"], width=167)
+                except Exception:
+                    st.warning(f"⚠️ Imagem ({pet['arquivo']}) não encontrada.")
+                st.caption(f"{pet['nome']} | +{calcular_bonus_pet(pet):,} por clique")
+
+        ch1_m2_o2, ch2_m2_o2, ch3_m2_o2 = calcular_chances_ovo(50, 35, 15)
+
+        with col_m2_egg2:
+            st.write("### Ovo Lendário:")
+            st.write(f"{NOME_PET_M2_R1}: {ch1_m2_o2:.1f}% (+{BONUS_PET_M2_R1:,} Pts)")
+            st.write(f"{NOME_PET_M2_R2}: {ch2_m2_o2:.1f}% (+{BONUS_PET_M2_R2:,} Pts)")
+            st.write(f"{NOME_PET_M2_R3}: **{ch3_m2_o2:.1f}%** (+{BONUS_PET_M2_R3:,} Pts)")
+            
+            desativar_m2_ovo2 = st.session_state.pontos < CUSTO_OVO_MUNDO_2_CARO or loja_em_cooldown
+            if st.button(f"Abrir Ovo = {CUSTO_OVO_MUNDO_2_CARO:,} Pontos", disabled=desativar_m2_ovo2, key="botao_m2_ovo2"):
+                if st.session_state.pontos >= CUSTO_OVO_MUNDO_2_CARO:
+                    st.session_state.pontos -= CUSTO_OVO_MUNDO_2_CARO
+                    sorteado = random.choices(
+                       [{"nome": NOME_PET_M2_R1, "arquivo": "logo10.png", "bonus": BONUS_PET_M2_R1, "chance": "50%", "nivel": 1}, 
+                        {"nome": NOME_PET_M2_R2, "arquivo": "logo11.png", "bonus": BONUS_PET_M2_R2, "chance": "35%", "nivel": 1},
+                        {"nome": NOME_PET_M2_R3, "arquivo": "logo12.png", "bonus": BONUS_PET_M2_R3, "chance": "15%", "nivel": 1}],
+                       weights=[ch1_m2_o2, ch2_m2_o2, ch3_m2_o2], k=1
+                    )[0]
+                    st.session_state.pet_slot_m2_2 = sorteado
+                    atualizar_poder_clique()
+                    st.session_state.ultima_compra = 0.0  
+                    salvar_progresso_atual()
+                    time.sleep(0.5) 
+                    st.rerun()
+
+            if st.session_state.pet_slot_m2_2:
+                pet = st.session_state.pet_slot_m2_2
+                st.write(f"**Pet Equipado (Nível {pet.get('nivel', 1)}):**")
+                try:
+                    st.image(pet["arquivo"], width=120)
+                except Exception:
+                    st.warning(f"⚠️ Imagem ({pet['arquivo']}) não encontrada.")
+                st.caption(f"{pet['nome']} | +{calcular_bonus_pet(pet):,} por clique")
+
+    # --- CONTEÚDO MUNDO 1 ---
+    if st.session_state.mundo_atual != 2:
+        st.subheader("Primeiro Mundo")
+        st.write("Trilha sonora: on/off")
+        try:
+            st.audio("musica67.mp3")
+        except Exception:
+            st.caption("🎵 Arquivo 'musica67.mp3' não encontrado.")
+
+        renderizar_area_clique()
+        st.markdown("---")
+        st.subheader("Comprar Ovos:")
+        col3, col4 = st.columns(2)
+
+        ch1_m1_o1, ch2_m1_o1, ch3_m1_o1 = calcular_chances_ovo(50, 35, 15)
+
+        with col3:
+            st.write("### Ovo Comum:")
+            st.write(f"Siruriru: {ch1_m1_o1:.1f}% (+1 Ponto)")
+            st.write(f"Peppa Pig: {ch2_m1_o1:.1f}% (+5 Pontos)")
+            st.write(f"Manoel G: **{ch3_m1_o1:.1f}%** (+10 Pontos)")
+            
+            custo_ovo1 = 100
+            desativar_ovo1 = st.session_state.pontos < custo_ovo1 or loja_em_cooldown
+            if st.button(f"Abrir Ovo = {custo_ovo1} Pontos", disabled=desativar_ovo1, key="botao_ovo1"):
+                if st.session_state.pontos >= custo_ovo1:
+                    st.session_state.pontos -= custo_ovo1
+                    sorteado_ovo1 = random.choices(
+                       [{"nome": "Siruriru", "arquivo": "logo3.png", "bonus": 1, "chance": "50%", "nivel": 1}, 
+                        {"nome": "Peppa Pig", "arquivo": "logo2.png", "bonus": 5, "chance": "35%", "nivel": 1},
+                        {"nome": "Manoel G", "arquivo": "logo1.png", "bonus": 10, "chance": "15%", "nivel": 1}],
+                       weights=[ch1_m1_o1, ch2_m1_o1, ch3_m1_o1], k=1
+                    )[0]
+                    st.session_state.pet_slot_1 = sorteado_ovo1
+                    atualizar_poder_clique()
+                    st.session_state.ultima_compra = 0.0  
+                    salvar_progresso_atual()
+                    time.sleep(0.5) 
+                    st.rerun()
+
+            if st.session_state.pet_slot_1:
+                pet = st.session_state.pet_slot_1
+                st.write(f"**Pet Equipado (Nível {pet.get('nivel', 1)}):**")
+                try:
+                    st.image(pet["arquivo"], width=188)
+                except Exception:
+                    st.warning(f"⚠️ Imagem ({pet['arquivo']}) não encontrada.")
+                st.caption(f"{pet['nome']} | +{calcular_bonus_pet(pet)} por clique")
+
+        ch1_m1_o2, ch2_m1_o2, ch3_m1_o2 = calcular_chances_ovo(50, 35, 15)
+
+        with col4:
+            st.write("### Ovo Raro:")
+            st.write(f"Dora A.: {ch1_m1_o2:.1f}% (+10 Pontos)")
+            st.write(f"Sonic: {ch2_m1_o2:.1f}% (+50 Pontos)")
+            st.write(f"Michael J.: **{ch3_m1_o2:.1f}%** (+100 Pontos) 🍀")
+            
+            custo_ovo2 = 1000
+            desativar_ovo2 = st.session_state.pontos < custo_ovo2 or loja_em_cooldown
+            if st.button(f"Abrir Ovo = {custo_ovo2} Pontos", disabled=desativar_ovo2, key="botao_ovo2"):
+                if st.session_state.pontos >= custo_ovo2:
+                    st.session_state.pontos -= custo_ovo2
+                    sorteado_ovo2 = random.choices(
+                       [{"nome": "Dora A.", "arquivo": "logo4.png", "bonus": 10, "chance": "50%", "nivel": 1}, 
+                        {"nome": "Sonic", "arquivo": "logo5.png", "bonus": 50, "chance": "35%", "nivel": 1},
+                        {"nome": "Michael J.", "arquivo": "logo6.png", "bonus": 100, "chance": "15%", "nivel": 1}],
+                       weights=[ch1_m1_o2, ch2_m1_o2, ch3_m1_o2], k=1
+                    )[0]
+                    st.session_state.pet_slot_2 = sorteado_ovo2
+                    atualizar_poder_clique()
+                    st.session_state.ultima_compra = 0.0  
+                    salvar_progresso_atual()
+                    time.sleep(0.5) 
+                    st.rerun()
+
+            if st.session_state.pet_slot_2:
+                pet = st.session_state.pet_slot_2
+                st.write(f"**Pet Equipado (Nível {pet.get('nivel', 1)}):**")
+                try:
+                    st.image(pet["arquivo"], width=100)
+                except Exception:
+                    st.warning(f"⚠️ Imagem ({pet['arquivo']}) não encontrada.")
+                st.caption(f"{pet['nome']} | +{calcular_bonus_pet(pet)} por clique")
+
+    st.markdown("---")
+
+    # --- LOJA DE MELHORIAS ---
+    st.subheader("Loja de Melhorias")
+
+    if st.session_state.mundo_atual == 2:
+        melhorias_clique = [
+            {"qtd": 50000, "custo": 15000000}, {"qtd": 100000, "custo": 50000000},
+            {"qtd": 250000, "custo": 150000000}, {"qtd": 500000, "custo": 500000000},
+            {"qtd": 1000000, "custo": 1000000000}, {"qtd": 2500000, "custo": 3500000000},
+            {"qtd": 5000000, "custo": 8000000000}, {"qtd": 10000000, "custo": 20000000000},
+            {"qtd": 25000000, "custo": 50000000000}, {"qtd": 50000000, "custo": 100000000000}
+        ]
+        melhorias_passivas = [
+            {"qtd": 50000, "custo": 4000000}, {"qtd": 100000, "custo": 12000000},
+            {"qtd": 250000, "custo": 40000000}, {"qtd": 500000, "custo": 120000000},
+            {"qtd": 1000000, "custo": 400000000}, {"qtd": 2000000, "custo": 1000000000},
+            {"qtd": 5000000, "custo": 3000000000}, {"qtd": 10000000, "custo": 7500000000},
+            {"qtd": 20000000, "custo": 15000000000}, {"qtd": 50000000, "custo": 40000000000}
+        ]
+    else:
+        melhorias_clique = [
+            {"qtd": 1, "custo": 100}, {"qtd": 5, "custo": 500}, {"qtd": 10, "custo": 1000},
+            {"qtd": 50, "custo": 5000}, {"qtd": 100, "custo": 10000}, {"qtd": 500, "custo": 50000},
+            {"qtd": 1000, "custo": 100000}, {"qtd": 2500, "custo": 250000}, {"qtd": 5000, "custo": 500005},
+            {"qtd": 10000, "custo": 1000000}
+        ]
+        melhorias_passivas = [
+            {"qtd": 5, "custo": 200}, {"qtd": 10, "custo": 600}, {"qtd": 20, "custo": 1100},
+            {"qtd": 100, "custo": 7500}, {"qtd": 200 Glen": 14500}, {"qtd": 1000, "custo": 72500},
+            {"qtd": 2000, "custo": 145000}, {"qtd": 5000, "custo": 360000}, {"qtd": 10000, "custo": 725000},
+            {"qtd": 20000, "custo": 1450000}
+        ]
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("Melhoria Clicker")
+        with st.container(height=350):
+            for i, item in enumerate(melhorias_clique):
+                texto = f"+{item['qtd']:,} clk | {item['custo']:,} Pts"
+                desativado = st.session_state.pontos < item['custo'] or loja_em_cooldown
+                key_btn = f"c_{st.session_state.mundo_atual}_{i}"
+
+                if st.button(texto, key=key_btn, disabled=desativado, use_container_width=True):
+                    if st.session_state.pontos >= item['custo']:
+                        st.session_state.ultima_compra = time.time()
+                        st.session_state.pontos -= item['custo']
+                        st.session_state.poder_base += item['qtd']
+                        atualizar_poder_clique()  
+                        st.session_state.pontos_leaderboard_cache = st.session_state.pontos
+                        salvar_progresso_atual()
+                        time.sleep(0.1)
+                        st.rerun()
+
+    with col2:
+        st.subheader("Auto Clickers")
+        with st.container(height=350):
+            for i, item in enumerate(melhorias_passivas):
+                texto = f"+{item['qtd']:,}/s | {item['custo']:,} Pts"
+                desativado = st.session_state.pontos < item['custo'] or loja_em_cooldown
+                key_btn = f"p_{st.session_state.mundo_atual}_{i}"
+
+                if st.button(texto, key=key_btn, disabled=desativado, use_container_width=True):
+                    if st.session_state.pontos >= item['custo']:
+                        st.session_state.ultima_compra = time.time()
+                        st.session_state.pontos -= item['custo']
+                        st.session_state.pontos_por_segundo += item['qtd']
+                        st.session_state.pontos_leaderboard_cache = st.session_state.pontos
+                        salvar_progresso_atual()
+                        time.sleep(0.1)
+                        st.rerun()
+
+with abas_principais[1]:
+    st.subheader("🧬 Laboratório de Fusão e Evolução")
+    st.write("Evolua o nível de seus pets equipados atuais para multiplicar exponencialmente o bônus concedido por eles.")
     
-    st.write("Trilha sonora: on/off")
-    try:
-        st.audio("musica67.mp3") 
-    except Exception:
-        pass
-
-    renderizar_area_clique()
-    st.markdown("---")
-    st.subheader("Comprar ovos:")
-    col_m2_egg1, col_m2_egg2 = st.columns(2)
-
-    ch1_m2_o1, ch2_m2_o1, ch3_m2_o1 = calcular_chances_ovo(50, 35, 15)
-
-    with col_m2_egg1:
-        st.write("### Ovo Épico:")
-        st.write(f"{NOME_PET_7}: {ch1_m2_o1:.1f}% (+{BONUS_PET_7:,} Pts)")
-        st.write(f"{NOME_PET_8}: {ch2_m2_o1:.1f}% (+{BONUS_PET_8:,} Pts)")
-        st.write(f"{NOME_PET_9}: **{ch3_m2_o1:.1f}%** (+{BONUS_PET_9:,} Pts)")
+    # Dicionário de slots disponíveis
+    slots_disponiveis = {}
+    if st.session_state.pet_slot_1: slots_disponiveis["Mundo 1 - Slot 1 (Ovo Comum)"] = ("pet_slot_1", st.session_state.pet_slot_1)
+    if st.session_state.pet_slot_2: slots_disponiveis["Mundo 1 - Slot 2 (Ovo Raro)"] = ("pet_slot_2", st.session_state.pet_slot_2)
+    if st.session_state.pet_slot_m2_1: slots_disponiveis["Mundo 2 - Slot 1 (Ovo Épico)"] = ("pet_slot_m2_1", st.session_state.pet_slot_m2_1)
+    if st.session_state.pet_slot_m2_2: slots_disponiveis["Mundo 2 - Slot 2 (Ovo Lendário)"] = ("pet_slot_m2_2", st.session_state.pet_slot_m2_2)
+    
+    if not slots_disponiveis:
+        st.info("Você precisa equipar pelo menos um pet para usar o laboratório de evolução!")
+    else:
+        slot_selecionado = st.selectbox("Escolha qual Pet deseja Evoluir:", list(slots_disponiveis.keys()))
+        chave_slot, pet_objeto = slots_disponiveis[slot_selecionado]
         
-        desativar_m2_ovo1 = st.session_state.pontos < CUSTO_OVO_MUNDO_2_BARATO or loja_em_cooldown
-        if st.button(f"Abrir Ovo = {CUSTO_OVO_MUNDO_2_BARATO:,} Pontos", disabled=desativar_m2_ovo1, key="botao_m2_ovo1"):
-            if st.session_state.pontos >= CUSTO_OVO_MUNDO_2_BARATO:
-                st.session_state.pontos -= CUSTO_OVO_MUNDO_2_BARATO
-                sorteado = random.choices(
-                   [{"nome": NOME_PET_7, "arquivo": "logo7.png", "bonus": BONUS_PET_7, "chance": "50%"}, 
-                    {"nome": NOME_PET_8, "arquivo": "logo8.png", "bonus": BONUS_PET_8, "chance": "35%"},
-                    {"nome": NOME_PET_9, "arquivo": "logo9.png", "bonus": BONUS_PET_9, "chance": "15%"}],
-                   weights=[ch1_m2_o1, ch2_m2_o1, ch3_m2_o1], k=1
-                )[0]
-                st.session_state.pet_slot_m2_1 = sorteado
-                atualizar_poder_clique()
-                st.session_state.ultima_compra = 0.0  
-                salvar_progresso_atual()
-                time.sleep(0.5) 
-                st.rerun()
-
-        if st.session_state.pet_slot_m2_1:
-            pet = st.session_state.pet_slot_m2_1
-            st.write("**Pet Equipado:**")
-            try:
-                st.image(pet["arquivo"], width=167)
-            except Exception:
-                st.warning(f"⚠️ Imagem ({pet['arquivo']}) não encontrada.")
-            st.caption(f"{pet['nome']} | +{calcular_bonus_pet(pet):,} por clique")
-
-    ch1_m2_o2, ch2_m2_o2, ch3_m2_o2 = calcular_chances_ovo(50, 35, 15)
-
-    with col_m2_egg2:
-        st.write("### Ovo Lendário:")
-        st.write(f"{NOME_PET_M2_R1}: {ch1_m2_o2:.1f}% (+{BONUS_PET_M2_R1:,} Pts)")
-        st.write(f"{NOME_PET_M2_R2}: {ch2_m2_o2:.1f}% (+{BONUS_PET_M2_R2:,} Pts)")
-        st.write(f"{NOME_PET_M2_R3}: **{ch3_m2_o2:.1f}%** (+{BONUS_PET_M2_R3:,} Pts)")
+        nivel_atual = pet_objeto.get("nivel", 1)
+        proximo_nivel = nivel_atual + 1
         
-        desativar_m2_ovo2 = st.session_state.pontos < CUSTO_OVO_MUNDO_2_CARO or loja_em_cooldown
-        if st.button(f"Abrir Ovo = {CUSTO_OVO_MUNDO_2_CARO:,} Pontos", disabled=desativar_m2_ovo2, key="botao_m2_ovo2"):
-            if st.session_state.pontos >= CUSTO_OVO_MUNDO_2_CARO:
-                st.session_state.pontos -= CUSTO_OVO_MUNDO_2_CARO
-                sorteado = random.choices(
-                   [{"nome": NOME_PET_M2_R1, "arquivo": "logo10.png", "bonus": BONUS_PET_M2_R1, "chance": "50%"}, 
-                    {"nome": NOME_PET_M2_R2, "arquivo": "logo11.png", "bonus": BONUS_PET_M2_R2, "chance": "35%"},
-                    {"nome": NOME_PET_M2_R3, "arquivo": "logo12.png", "bonus": BONUS_PET_M2_R3, "chance": "15%"}],
-                   weights=[ch1_m2_o2, ch2_m2_o2, ch3_m2_o2], k=1
-                )[0]
-                st.session_state.pet_slot_m2_2 = sorteado
-                atualizar_poder_clique()
-                st.session_state.ultima_compra = 0.0  
-                salvar_progresso_atual()
-                time.sleep(0.5) 
-                st.rerun()
-
-        if st.session_state.pet_slot_m2_2:
-            pet = st.session_state.pet_slot_m2_2
-            st.write("**Pet Equipado:**")
-            try:
-                st.image(pet["arquivo"], width=120)
-            except Exception:
-                st.warning(f"⚠️ Imagem ({pet['arquivo']}) não encontrada.")
-            st.caption(f"{pet['nome']} | +{calcular_bonus_pet(pet):,} por clique")
-
-# --- CONTEÚDO MUNDO 1 ---
-if st.session_state.mundo_atual != 2:
-    st.subheader("Primeiro Mundo")
-    st.write("Trilha sonora: on/off")
-    try:
-        st.audio("musica67.mp3")
-    except Exception:
-        st.caption("🎵 Arquivo 'musica67.mp3' não encontrado.")
-
-    renderizar_area_clique()
-    st.markdown("---")
-    st.subheader("Comprar Ovos:")
-    col3, col4 = st.columns(2)
-
-    ch1_m1_o1, ch2_m1_o1, ch3_m1_o1 = calcular_chances_ovo(50, 35, 15)
-
-    with col3:
-        st.write("### Ovo Comum:")
-        st.write(f"Siruriru: {ch1_m1_o1:.1f}% (+1 Ponto)")
-        st.write(f"Peppa Pig: {ch2_m1_o1:.1f}% (+5 Pontos)")
-        st.write(f"Manoel G: **{ch3_m1_o1:.1f}%** (+10 Pontos)")
+        # O custo escala baseado no bônus e nível do pet
+        custo_evolucao = int(pet_objeto["bonus"] * 15 * (nivel_atual ** 2))
+        if custo_evolucao < 500: custo_evolucao = 500 # Custo mínimo
         
-        custo_ovo1 = 100
-        desativar_ovo1 = st.session_state.pontos < custo_ovo1 or loja_em_cooldown
-        if st.button(f"Abrir Ovo = {custo_ovo1} Pontos", disabled=desativar_ovo1, key="botao_ovo1"):
-            if st.session_state.pontos >= custo_ovo1:
-                st.session_state.pontos -= custo_ovo1
-                sorteado_ovo1 = random.choices(
-                   [{"nome": "Siruriru", "arquivo": "logo3.png", "bonus": 1, "chance": "50%"}, 
-                    {"nome": "Peppa Pig", "arquivo": "logo2.png", "bonus": 5, "chance": "35%"},
-                    {"nome": "Manoel G", "arquivo": "logo1.png", "bonus": 10, "chance": "15%"}],
-                   weights=[ch1_m1_o1, ch2_m1_o1, ch3_m1_o1], k=1
-                )[0]
-                st.session_state.pet_slot_1 = sorteado_ovo1
-                atualizar_poder_clique()
-                st.session_state.ultima_compra = 0.0  
-                salvar_progresso_atual()
-                time.sleep(0.5) 
-                st.rerun()
-
-        if st.session_state.pet_slot_1:
-            pet = st.session_state.pet_slot_1
-            st.write("**Pet Equipado:**")
-            try:
-                st.image(pet["arquivo"], width=188)
-            except Exception:
-                st.warning(f"⚠️ Imagem ({pet['arquivo']}) não encontrada.")
-            st.caption(f"{pet['nome']} | +{calcular_bonus_pet(pet)} por clique")
-
-    ch1_m1_o2, ch2_m1_o2, ch3_m1_o2 = calcular_chances_ovo(50, 35, 15)
-
-    with col4:
-        st.write("### Ovo Raro:")
-        st.write(f"Dora A.: {ch1_m1_o2:.1f}% (+10 Pontos)")
-        st.write(f"Sonic: {ch2_m1_o2:.1f}% (+50 Pontos)")
-        st.write(f"Michael J.: **{ch3_m1_o2:.1f}%** (+100 Pontos) 🍀")
+        st.markdown(f"### Estatísticas de upgrade:")
+        st.write(f"🐾 **Pet:** {pet_objeto['nome']} | ⭐ **Nível Atual:** {nivel_atual} $\rightarrow$ **Próximo:** {proximo_nivel}")
+        st.write(f"📊 **Bônus Atual:** {calcular_bonus_pet(pet_objeto):,} $\rightarrow$ **Novo Bônus:** {pet_objeto['bonus'] * proximo_nivel:,}")
+        st.write(f"🪙 **Custo da Evolução:** {custo_evolucao:,} Pontos")
         
-        custo_ovo2 = 1000
-        desativar_ovo2 = st.session_state.pontos < custo_ovo2 or loja_em_cooldown
-        if st.button(f"Abrir Ovo = {custo_ovo2} Pontos", disabled=desativar_ovo2, key="botao_ovo2"):
-            if st.session_state.pontos >= custo_ovo2:
-                st.session_state.pontos -= custo_ovo2
-                sorteado_ovo2 = random.choices(
-                   [{"nome": "Dora A.", "arquivo": "logo4.png", "bonus": 10, "chance": "50%"}, 
-                    {"nome": "Sonic", "arquivo": "logo5.png", "bonus": 50, "chance": "35%"},
-                    {"nome": "Michael J.", "arquivo": "logo6.png", "bonus": 100, "chance": "15%"}],
-                   weights=[ch1_m1_o2, ch2_m1_o2, ch3_m1_o2], k=1
-                )[0]
-                st.session_state.pet_slot_2 = sorteado_ovo2
-                atualizar_poder_clique()
-                st.session_state.ultima_compra = 0.0  
-                salvar_progresso_atual()
-                time.sleep(0.5) 
-                st.rerun()
+        pode_evoluir = st.session_state.pontos >= custo_evolucao
+        if st.button(f"Evoluir {pet_objeto['nome']} para Nível {proximo_nivel}", disabled=not pode_evoluir, use_container_width=True):
+            st.session_state.pontos -= custo_evolucao
+            pet_objeto["nivel"] = proximo_nivel
+            
+            # Reatribui o objeto atualizado na sessão correta
+            if chave_slot == "pet_slot_1": st.session_state.pet_slot_1 = pet_objeto
+            elif chave_slot == "pet_slot_2": st.session_state.pet_slot_2 = pet_objeto
+            elif chave_slot == "pet_slot_m2_1": st.session_state.pet_slot_m2_1 = pet_objeto
+            elif chave_slot == "pet_slot_m2_2": st.session_state.pet_slot_m2_2 = pet_objeto
+            
+            atualizar_poder_clique()
+            salvar_progresso_atual()
+            st.success(f"✨ Parabéns! Seu {pet_objeto['nome']} evoluiu para o Nível {proximo_nivel}!")
+            time.sleep(0.5)
+            st.rerun()
 
-        if st.session_state.pet_slot_2:
-            pet = st.session_state.pet_slot_2
-            st.write("**Pet Equipado:**")
-            try:
-                st.image(pet["arquivo"], width=100)
-            except Exception:
-                st.warning(f"⚠️ Imagem ({pet['arquivo']}) não encontrada.")
-            st.caption(f"{pet['nome']} | +{calcular_bonus_pet(pet)} por clique")
-
-st.markdown("---")
-
-# --- LOJA DE MELHORIAS ---
-st.subheader("Loja de Melhorias")
-
-if st.session_state.mundo_atual == 2:
-    melhorias_clique = [
-        {"qtd": 50000, "custo": 15000000}, {"qtd": 100000, "custo": 50000000},
-        {"qtd": 250000, "custo": 150000000}, {"qtd": 500000, "custo": 500000000},
-        {"qtd": 1000000, "custo": 1000000000}, {"qtd": 2500000, "custo": 3500000000},
-        {"qtd": 5000000, "custo": 8000000000}, {"qtd": 10000000, "custo": 20000000000},
-        {"qtd": 25000000, "custo": 50000000000}, {"qtd": 50000000, "custo": 100000000000}
-    ]
-    melhorias_passivas = [
-        {"qtd": 50000, "custo": 4000000}, {"qtd": 100000, "custo": 12000000},
-        {"qtd": 250000, "custo": 40000000}, {"qtd": 500000, "custo": 120000000},
-        {"qtd": 1000000, "custo": 400000000}, {"qtd": 2000000, "custo": 1000000000},
-        {"qtd": 5000000, "custo": 3000000000}, {"qtd": 10000000, "custo": 7500000000},
-        {"qtd": 20000000, "custo": 15000000000}, {"qtd": 50000000, "custo": 40000000000}
-    ]
-else:
-    melhorias_clique = [
-        {"qtd": 1, "custo": 100}, {"qtd": 5, "custo": 500}, {"qtd": 10, "custo": 1000},
-        {"qtd": 50, "custo": 5000}, {"qtd": 100, "custo": 10000}, {"qtd": 500, "custo": 50000},
-        {"qtd": 1000, "custo": 100000}, {"qtd": 2500, "custo": 250000}, {"qtd": 5000, "custo": 500005},
-        {"qtd": 10000, "custo": 1000000}
-    ]
-    melhorias_passivas = [
-        {"qtd": 5, "custo": 200}, {"qtd": 10, "custo": 600}, {"qtd": 20, "custo": 1100},
-        {"qtd": 100, "custo": 7500}, {"qtd": 200, "custo": 14500}, {"qtd": 1000, "custo": 72500},
-        {"qtd": 2000, "custo": 145000}, {"qtd": 5000, "custo": 360000}, {"qtd": 10000, "custo": 725000},
-        {"qtd": 20000, "custo": 1450000}
-    ]
-
-col1, col2 = st.columns(2)
-with col1:
-    st.subheader("Melhoria Clicker")
-    with st.container(height=350):
-        for i, item in enumerate(melhorias_clique):
-            texto = f"+{item['qtd']:,} clk | {item['custo']:,} Pts"
-            desativado = st.session_state.pontos < item['custo'] or loja_em_cooldown
-            key_btn = f"c_{st.session_state.mundo_atual}_{i}"
-
-            if st.button(texto, key=key_btn, disabled=desativado, use_container_width=True):
-                if st.session_state.pontos >= item['custo']:
-                    st.session_state.ultima_compra = time.time()
-                    st.session_state.pontos -= item['custo']
-                    st.session_state.poder_base += item['qtd']
-                    atualizar_poder_clique()  
-                    st.session_state.pontos_leaderboard_cache = st.session_state.pontos
-                    salvar_progresso_atual()
-                    time.sleep(0.1)
-                    st.rerun()
-
-with col2:
-    st.subheader("Auto Clickers")
-    with st.container(height=350):
-        for i, item in enumerate(melhorias_passivas):
-            texto = f"+{item['qtd']:,}/s | {item['custo']:,} Pts"
-            desativado = st.session_state.pontos < item['custo'] or loja_em_cooldown
-            key_btn = f"p_{st.session_state.mundo_atual}_{i}"
-
-            if st.button(texto, key=key_btn, disabled=desativado, use_container_width=True):
-                if st.session_state.pontos >= item['custo']:
-                    st.session_state.ultima_compra = time.time()
-                    st.session_state.pontos -= item['custo']
-                    st.session_state.pontos_por_segundo += item['qtd']
-                    st.session_state.pontos_leaderboard_cache = st.session_state.pontos
-                    salvar_progresso_atual()
-                    time.sleep(0.1)
-                    st.rerun()
+with abas_principais[2]:
+    st.subheader("🔮 Altar de Renascimento Sagrado")
+    st.write("Ao atingir o limite cósmico de pontos, você pode transcender sua alma. Você perderá seus pontos e upgrades comprados, mas reterá seus pets e ganhará **Cristais de Renascimento**.")
+    st.info("💡 **Benefício permanente:** Cada Cristal de Renascimento concede **+50% de produção de pontos globais** (afeta cliques e passivos!).")
+    
+    META_REBIRTH = 1000000000 # 1 Bilhão
+    
+    st.metric("Progresso para o Renascimento", f"{st.session_state.pontos:,} / {META_REBIRTH:,}")
+    
+    pode_renascer = st.session_state.pontos >= META_REBIRTH
+    
+    if pode_renascer:
+        st.success("✨ Os portais estão abertos! Você está pronto para Renascer.")
+        if st.button("🌟 REALIZAR RENASCIMENTO (+1 Cristal Coletado)", type="primary", use_container_width=True):
+            st.session_state.cristais += 1
+            st.session_state.pontos = 0
+            st.session_state.poder_base = 1
+            st.session_state.pontos_por_segundo = 0
+            st.session_state.mundo_2_desbloqueado = False
+            st.session_state.mundo_atual = 1
+            
+            atualizar_poder_clique()
+            salvar_progresso_atual()
+            st.balloons()
+            st.success("🔮 Você renasceu! Sinta o novo poder correndo pelas suas veias.")
+            time.sleep(1)
+            st.rerun()
+    else:
+        st.error(f"Faltam {META_REBIRTH - st.session_state.pontos:,} pontos para que você possa coletar um Cristal de Renascimento.")
 
 atualizar_no_leaderboard(st.session_state.nome_usuario, st.session_state.pontos)
 
 # --- LOG DE ATUALIZAÇÕES ---
 st.markdown("---")
 st.subheader("Atualizações:")
-st.write("(3.0.0) - Criação do Painel do DEV exclusivo e limitação do painel ADM")
-st.write("(3.0.1) - Padronização do Painel de de deve com sistema de ativação por senha idêntico ao Admin")
+st.write("(3.1.0) - Adicionado Templo de Renascimento funcional coletando Cristais com multiplicadores permanentes de 50%")
+st.write("(3.1.1) - Adicionado Laboratório de Fusão/Evolução multiplicando o poder de bônus base dos pets ativos")
 
 # --- 🏆 TABELA DE CLASSIFICAÇÃO GLOBAL ---
 st.markdown("---")
@@ -1125,7 +1223,7 @@ else:
                     "pet_slot_1": None, "pet_slot_2": None,
                     "pet_slot_m2_1": None, "pet_slot_m2_2": None,
                     "ultimo_tick": time.time(), "mundo_2_desbloqueado": False, "mundo_atual": 1,
-                    "titulo": ""
+                    "titulo": "", "cristais": 0
                 }
                 salvar_todos_usuarios(usuarios)
             resetar_estados_jogador_local()
