@@ -31,6 +31,7 @@ BONUS_PET_M2_R3 = 50000000
 CUSTO_OVO_MUNDO_2_CARO = 500000000   # Custo do segundo ovo do Mundo 2
 # =====================================================================
 
+SENHA_DEV = "DEv_SuPRemE_S3cur3_K3y_2026#!"  # 🔐 SENHA ULTRA SEGURA DO DEV
 SENHA_ADMIN = "XXxx67xxXX"
 SENHA_APOIADOR = "67AP0IO67"  
 ACCOUNTS_FILE = "usuarios.json"
@@ -459,13 +460,23 @@ with st.sidebar:
         
     st.markdown("---")
 
-    # 💻 PAINEL EXCLUSIVO DO DEV (MÚLTIPLAS OPÇÕES DE CONTROLE SUPREMO)
+    # 💻 PAINEL EXCLUSIVO DO DEV (PROTEGIDO POR CARGO E SENHA ADICIONAL ULTRA SEGURA)
     st.header("💻 Painel do DEV")
     acesso_dev = tem_titulo("DEV")
+    exibir_painel_dev = False
     
     if acesso_dev:
-        st.success("Acesso Supremo garantido, Senhor Desenvolvedor!")
-        
+        senha_dev_input = st.text_input("🔒 Insira a Chave de Segurança DEV:", type="password", key="senha_dev_input")
+        if len(senha_dev_input) > 0:
+            if senha_dev_input == SENHA_DEV:
+                st.success("Autenticação de Desenvolvedor Completa!")
+                exibir_painel_dev = True
+            else:
+                st.error("Chave de Segurança Incorreta!")
+    else:
+        st.info("Apenas portadores do título supremo [DEV] possuem permissão para tentar acesso.")
+
+    if exibir_painel_dev:
         st.subheader("Modificador de Atributos")
         qtd_alteracao = st.number_input("Valor da Alteração:", min_value=1, value=10000, step=1000, key="dev_val_attr")
         
@@ -558,12 +569,10 @@ with st.sidebar:
                 st.markdown("---")
         else:
             st.info("Placar vazio.")
-    else:
-        st.info("Apenas portadores do título supremo [DEV] possuem acesso a este painel.")
         
     st.markdown("---")
     
-    # 👑 PAINEL DE ADMIN (SEM BANIR OU EDITAR TÍTULO)
+    # ⚙️ PAINEL DE ADMIN (SEM BANIR OU EDITAR TÍTULO)
     st.header("⚙️ Painel de Admin")
     acesso_admin = tem_titulo("ADM") or tem_titulo("DEV")
     exibir_painel_admin = False
@@ -770,7 +779,7 @@ with st.sidebar:
         if st.button("Desativar", type="secondary", use_container_width=True, disabled=(mult_sorte == 1), key="btn_desativar_sorte"):
             config_globais["multiplicador_sorte"] = 1
             salvar_configuracoes_globais(config_globais)
-            st.warning("Multiplicador de Sorte Desativado!")
+            st.warning("Multiplicador de Sorte Disativado!")
             time.sleep(0.4)
             st.rerun()
 
@@ -781,7 +790,7 @@ with st.sidebar:
     acesso_apoiador = tem_titulo("APD") or tem_titulo("ADM") or tem_titulo("DEV")
     exibir_painel_apoiador = False
     
-    if acesso_apoiador:
+    if acceso_apoiador:
         st.success(f"Acesso automático concedido via título [{st.session_state.titulo}]!")
         exibir_painel_apoiador = True
     else:
@@ -1132,8 +1141,8 @@ with col_conq3:
 # --- LOG DE ATUALIZAÇÕES ---
 st.markdown("---")
 st.subheader("Atualizações:")
-st.write("(2.9.1) - Adição do título supremo [DEV] com acesso irrestrito aos dois painéis")
-st.write("(3.0.0) - Adição do Painel do DEV exclusivo, remoção de cargos/ban do painel ADM e novas ferramentas DEV")
+st.write("(3.0.0) - Criação do Painel do DEV exclusivo e limitação do painel ADM")
+st.write("(3.0.1) - Implementação de barreira por Token/Senha Alfanumérica Avançada para o Painel DEV")
 
 # --- 🏆 TABELA DE CLASSIFICAÇÃO GLOBAL ---
 st.markdown("---")
