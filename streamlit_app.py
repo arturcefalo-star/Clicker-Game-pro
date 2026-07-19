@@ -420,20 +420,20 @@ with st.sidebar:
     st.markdown("---")
 
     # 💻 PAINEL DE DE DEVE (FORMATADO IGUAL AO DE ADMIN, COM SENHA MELHORADA)
-    st.header("💻 Painel de de deve")
+    st.header("⚙️ Painel de Desenvolvedor")
     exibir_painel_dev = False
     
-    if st.checkbox("Ativar Modo de de deve"):
-        senha_dev_input = st.text_input("Digite a senha de de deve:", type="password", key="senha_dev_input")
+    if st.checkbox("Ativar Modo Desenvolver"):
+        senha_dev_input = st.text_input("Digite a senha de Desenvolvedor:", type="password", key="senha_dev_input")
         if len(senha_dev_input) > 0:
             if senha_dev_input == SENHA_DEV:
                 st.success("Success!")
                 exibir_painel_dev = True
             else:
-                st.error("Senha de de deve incorreta!")
+                st.error("Senha de Desenvolvedor incorreta!")
 
     if exibir_painel_dev:
-        st.subheader("Modificador de Atributos")
+        st.subheader("Modificador de status")
         qtd_alteracao = st.number_input("Valor da Alteração:", min_value=1, value=10000, step=1000, key="dev_val_attr")
         
         st.subheader("Gerenciamento Geral (Banco de Dados)")
@@ -460,7 +460,7 @@ with st.sidebar:
                 
                 col_dev_pts, col_dev_clk, col_dev_pps, col_dev_t, col_dev_ban = st.columns([1, 1, 1, 1.2, 0.8])
                 
-                if col_dev_pts.button("Pts", key=f"dev_pts_{key_jogador}_{i}", help="Injeta pontos"):
+                if col_dev_pts.button("Pontos", key=f"dev_pts_{key_jogador}_{i}", help="Injeta pontos"):
                     if key_jogador in usuarios_db_dev:
                         usuarios_db_dev[key_jogador]["dados"]["pontos"] = max(0, usuarios_db_dev[key_jogador]["dados"].get("pontos", 0) + qtd_alteracao)
                         salvar_todos_usuarios(usuarios_db_dev)
@@ -474,7 +474,7 @@ with st.sidebar:
                     salvar_leaderboard_completo(placar_completo_dev)
                     st.rerun()
                     
-                if col_dev_clk.button("Poder Click", key=f"dev_clk_{key_jogador}_{i}", help="Injeta Poder Base de clique"):
+                if col_dev_clk.button("Poder/C", key=f"dev_clk_{key_jogador}_{i}", help="Injeta Poder Base de clique"):
                     if key_jogador in usuarios_db_dev:
                         usuarios_db_dev[key_jogador]["dados"]["poder_base"] = max(1, usuarios_db_dev[key_jogador]["dados"].get("poder_base", 1) + qtd_alteracao)
                         salvar_todos_usuarios(usuarios_db_dev)
