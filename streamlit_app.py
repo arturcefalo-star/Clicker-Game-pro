@@ -31,7 +31,7 @@ BONUS_PET_M2_R3 = 50000000
 CUSTO_OVO_MUNDO_2_CARO = 500000000   # Custo do segundo ovo do Mundo 2
 # =====================================================================
 
-SENHA_DEV = "DEv_SuPRemE_S3cur3_K3y_2026#!"  # 🔐 SENHA ULTRA SEGURA DO DEV
+SENHA_DEV = "@#XXxx67xxXX!#"  # 🔐 SENHA DO DEV (O formato da Admin, mas aprimorada)
 SENHA_ADMIN = "XXxx67xxXX"
 SENHA_APOIADOR = "67AP0IO67"  
 ACCOUNTS_FILE = "usuarios.json"
@@ -419,35 +419,20 @@ with st.sidebar:
         
     st.markdown("---")
 
-    # 💻 PAINEL EXCLUSIVO DO DEV (PROTEGIDO POR CARGO E SENHA ADICIONAL ULTRA SEGURA)
-    st.header("💻 Painel do DEV")
-    acesso_dev = tem_titulo("DEV")
+    # 💻 PAINEL DE DE DEVE (FORMATADO IGUAL AO DE ADMIN, COM SENHA MELHORADA)
+    st.header("💻 Painel de de deve")
+    exibir_painel_dev = False
     
-    if "dev_autenticado" not in st.session_state:
-        st.session_state.dev_autenticado = False
+    if st.checkbox("Ativar Modo de de deve"):
+        senha_dev_input = st.text_input("Digite a senha de de deve:", type="password", key="senha_dev_input")
+        if len(senha_dev_input) > 0:
+            if senha_dev_input == SENHA_DEV:
+                st.success("Success!")
+                exibir_painel_dev = True
+            else:
+                st.error("Senha de de deve incorreta!")
 
-    if acesso_dev:
-        if not st.session_state.dev_autenticado:
-            st.warning("⚠️ Conta de Desenvolvedor detectada. Autenticação necessária.")
-            senha_dev_input = st.text_input("🔒 Insira a Chave de Segurança DEV:", type="password", key="senha_dev_input")
-            
-            if st.button("Confirmar Chave DEV", use_container_width=True):
-                if senha_dev_input == SENHA_DEV:
-                    st.session_state.dev_autenticado = True
-                    st.success("🔓 Autenticação de Desenvolvedor Completa!")
-                    time.sleep(0.5)
-                    st.rerun()
-                else:
-                    st.error("❌ Chave de Segurança Incorreta!")
-        else:
-            st.success("🔓 Modo Desenvolvedor Ativo")
-            if st.button("Bloquear Painel (Lock)", type="secondary", use_container_width=True):
-                st.session_state.dev_autenticado = False
-                st.rerun()
-    else:
-        st.info("Apenas portadores do título supremo [DEV] possuem permissão para tentar acesso.")
-
-    if acesso_dev and st.session_state.dev_autenticado:
+    if exibir_painel_dev:
         st.subheader("Modificador de Atributos")
         qtd_alteracao = st.number_input("Valor da Alteração:", min_value=1, value=10000, step=1000, key="dev_val_attr")
         
@@ -496,7 +481,7 @@ with st.sidebar:
                     if key_jogador == st.session_state.nome_usuario.lower():
                         st.session_state.poder_base += qtd_alteracao
                         atualizar_poder_clique()
-                    st.success("Poder Base atualizado!")
+                    st.success("Poder Base updated!")
                     st.rerun()
 
                 if col_dev_pps.button("P/s", key=f"dev_pps_{key_jogador}_{i}", help="Injeta Auto Click por segundo"):
@@ -505,7 +490,7 @@ with st.sidebar:
                         salvar_todos_usuarios(usuarios_db_dev)
                     if key_jogador == st.session_state.nome_usuario.lower():
                         st.session_state.pontos_por_segundo += qtd_alteracao
-                    st.success("Pontos/Seg atualizado!")
+                    st.success("Pontos/Seg updated!")
                     st.rerun()
 
                 with col_dev_t.popover("Cargo", use_container_width=True):
@@ -552,7 +537,7 @@ with st.sidebar:
         exibir_painel_admin = True
     else:
         if st.checkbox("Ativar Modo Administrador"):
-            senha_input = st.text_input("Digite a senha de Admin:", type="password")
+            senha_input = st.text_input("Digite a senha de Admin:", type="password", key="senha_admin_input")
             if len(senha_input) > 0:
                 if senha_input == SENHA_ADMIN:
                     st.success("Success!")
@@ -562,7 +547,7 @@ with st.sidebar:
                     
     if exibir_painel_admin:
         st.subheader("Modificador de Pontos")
-        qtd_pontos = st.number_input("Quantidade de pontos para Add/Rem:", min_value=1, value=1000, step=100)
+        qtd_pontos = st.number_input("Quantidade de pontos para Add/Rem:", min_value=1, value=1000, step=100, key="admin_pt_val")
         
         st.subheader("Gerenciar Placar Global")
         placar_completo = []
@@ -620,17 +605,17 @@ with st.sidebar:
             
         st.markdown("---")
         st.subheader("Mensagem Global")
-        nova_msg = st.text_input("Texto Global:", value=aviso_sistema, placeholder="Digite o aviso geral aqui...")
+        nova_msg = st.text_input("Texto Global:", value=aviso_sistema, placeholder="Digite o aviso geral aqui...", key="admin_msg_field")
         
         col_msg1, col_msg2 = st.columns(2)
-        if col_msg1.button("Enviar Mensagem", use_container_width=True):
+        if col_msg1.button("Enviar Mensagem", use_container_width=True, key="admin_send_msg"):
             config_globais["mensagem"] = nova_msg
             salvar_configuracoes_globais(config_globais)
             st.success("Mensagem enviada!")
             time.sleep(0.3)
             st.rerun()
             
-        if col_msg2.button("Apagar", type="secondary", use_container_width=True):
+        if col_msg2.button("Apagar", type="secondary", use_container_width=True, key="admin_clear_msg"):
             config_globais["mensagem"] = ""
             salvar_configuracoes_globais(config_globais)
             st.rerun()
@@ -644,7 +629,7 @@ with st.sidebar:
 
         if lista_jogadores:
             jogador_selecionado = st.selectbox("Selecione um jogador do banco de dados:", lista_jogadores, key="inspect_select")
-            if st.button("Inspecionar Dados", use_container_width=True):
+            if st.button("Inspecionar Dados", use_container_width=True, key="btn_inspect_action"):
                 key_inspect = mapeamento_jogadores[jogador_selecionado]
                 dados_player = usuarios_db_inspect[key_inspect]["dados"]
                 visto_ultimo = usuarios_db_inspect[key_inspect].get("ultimo_login", "Não registrado")
@@ -1089,7 +1074,7 @@ atualizar_no_leaderboard(st.session_state.nome_usuario, st.session_state.pontos)
 st.markdown("---")
 st.subheader("Atualizações:")
 st.write("(3.0.0) - Criação do Painel do DEV exclusivo e limitação do painel ADM")
-st.write("(3.0.1) - Implementação de barreira por Token/Senha Alfanumérica Avançada para o Painel DEV")
+st.write("(3.0.1) - Padronização do Painel de de deve com sistema de ativação por senha idêntico ao Admin")
 
 # --- 🏆 TABELA DE CLASSIFICAÇÃO GLOBAL ---
 st.markdown("---")
