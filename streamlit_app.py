@@ -204,7 +204,7 @@ if "nome_usuario" not in st.session_state:
 if not st.session_state.logado:
     st.title("Clicker Game - Login")
     
-    aba_login, aba_salvas, aba_registro = st.tabs(["Entrar na Conta", "Contas Salvas", "Criar Nova Conta"])
+    aba_login, aba_salvas, aba_registro = st.tabs(["Entrar", "Contas Salvas", "Criar Nova Conta"])
     
     with aba_login:
         st.subheader("Faça seu Login")
