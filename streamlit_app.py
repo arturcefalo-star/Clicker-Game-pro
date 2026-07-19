@@ -169,33 +169,40 @@ def verificar_auto_login():
             return None
     return None
 
+# --- INICIALIZAÇÃO DE SESSÃO E CARREGAMENTO ---
 
-# --- INICIALIZAÇÃO DE SESSÃO DO LOGIN ---
+def carregar_dados_usuario(username_key):
+    """Carrega os dados de um usuário específico para o session_state."""
+    usuarios = carregar_todos_usuarios()
+    if username_key in usuarios:
+        dados = usuarios[username_key]["dados"]
+        st.session_state.pontos = dados.get("pontos", 0)
+        st.session_state.poder_base = dados.get("poder_base", 1)
+        st.session_state.pontos_por_segundo = dados.get("pontos_por_segundo", 0)
+        st.session_state.pet_slot_1 = dados.get("pet_slot_1", None)
+        st.session_state.pet_slot_2 = dados.get("pet_slot_2", None)
+        st.session_state.pet_slot_m2_1 = dados.get("pet_slot_m2_1", None)
+        st.session_state.pet_slot_m2_2 = dados.get("pet_slot_m2_2", None)
+        st.session_state.ultimo_tick = dados.get("ultimo_tick", time.time())
+        st.session_state.mundo_2_desbloqueado = dados.get("mundo_2_desbloqueado", False)
+        st.session_state.mundo_atual = dados.get("mundo_atual", 1)
+        st.session_state.pontos_leaderboard_cache = dados.get("pontos", 0)
+        st.session_state.nome_usuario = usuarios[username_key]["nome_exibicao"]
+        st.session_state.logado = True
+        return True
+    return False
+
 if "logado" not in st.session_state:
     st.session_state.logado = False
 if "nome_usuario" not in st.session_state:
     st.session_state.nome_usuario = ""
 
-# --- CHECAGEM AUTOMÁTICA DE LOGIN (EXECUTA APENAS UMA VEZ NO COMPONENT LOAD) ---
+# --- CHECAGEM AUTOMÁTICA DE LOGIN ---
 if not st.session_state.logado:
     usuario_salvo = verificar_auto_login()
     if usuario_salvo:
-        usuarios = carregar_todos_usuarios()
-        if usuario_salvo in usuarios:
-            dados = usuarios[usuario_salvo]["dados"]
-            st.session_state.pontos = dados.get("pontos", 0)
-            st.session_state.poder_base = dados.get("poder_base", 1)
-            st.session_state.pontos_por_segundo = dados.get("pontos_por_segundo", 0)
-            st.session_state.pet_slot_1 = dados.get("pet_slot_1", None)
-            st.session_state.pet_slot_2 = dados.get("pet_slot_2", None)
-            st.session_state.pet_slot_m2_1 = dados.get("pet_slot_m2_1", None)
-            st.session_state.pet_slot_m2_2 = dados.get("pet_slot_m2_2", None)
-            st.session_state.ultimo_tick = dados.get("ultimo_tick", time.time())
-            st.session_state.mundo_2_desbloqueado = dados.get("mundo_2_desbloqueado", False)
-            st.session_state.mundo_atual = dados.get("mundo_atual", 1)
-            st.session_state.pontos_leaderboard_cache = dados.get("pontos", 0)
-            st.session_state.nome_usuario = usuarios[usuario_salvo]["nome_exibicao"]
-            st.session_state.logado = True
+        if carregar_dados_usuario(usuario_salvo):
+            st.rerun()
 
 # =====================================================================
 # 🔐 TELA DE LOGIN / REGISTRO
@@ -215,28 +222,11 @@ if not st.session_state.logado:
             user_key = log_user.lower()
             
             if user_key in usuarios and usuarios[user_key]["senha"] == log_pass:
-                dados = usuarios[user_key]["dados"]
-                st.session_state.pontos = dados.get("pontos", 0)
-                st.session_state.poder_base = dados.get("poder_base", 1)
-                st.session_state.pontos_por_segundo = dados.get("pontos_por_segundo", 0)
-                st.session_state.pet_slot_1 = dados.get("pet_slot_1", None)
-                st.session_state.pet_slot_2 = dados.get("pet_slot_2", None)
-                st.session_state.pet_slot_m2_1 = dados.get("pet_slot_m2_1", None)
-                st.session_state.pet_slot_m2_2 = dados.get("pet_slot_m2_2", None)
-                st.session_state.ultimo_tick = dados.get("ultimo_tick", time.time())
-                st.session_state.mundo_2_desbloqueado = dados.get("mundo_2_desbloqueado", False)
-                st.session_state.mundo_atual = dados.get("mundo_atual", 1)
-                st.session_state.pontos_leaderboard_cache = dados.get("pontos", 0)
-                
-                st.session_state.nome_usuario = usuarios[user_key]["nome_exibicao"]
-                st.session_state.logado = True
-                
-                # Salva a sessão ativa localmente para entrar direto da próxima vez
-                salvar_sessao_ativa(user_key)
-                
-                st.success(f"Bem-vindo de volta, {st.session_state.nome_usuario}!")
-                time.sleep(0.5)
-                st.rerun()
+                if carregar_dados_usuario(user_key):
+                    salvar_sessao_ativa(user_key)
+                    st.success(f"Bem-vindo de volta, {st.session_state.nome_usuario}!")
+                    time.sleep(0.5)
+                    st.rerun()
             else:
                 st.error("Usuário ou senha incorretos.")
                 
