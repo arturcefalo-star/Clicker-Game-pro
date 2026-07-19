@@ -3,6 +3,7 @@ import time
 import random
 import json
 import os
+import uuid
 from streamlit_autorefresh import st_autorefresh
 
 # =====================================================================
@@ -37,6 +38,7 @@ SENHA_APOIADOR = "67AP0IO67"
 ACCOUNTS_FILE = "usuarios.json"
 LEADERBOARD_FILE = "leaderboard.json"
 AVISOS_FILE = "avisos.json"
+DISPOSITIVOS_FILE = "contas_dispositivos.json"
 
 # --- FUNÇÕES DE GERENCIAMENTO DE USUÁRIOS E SALVAMENTO ---
 
@@ -54,20 +56,42 @@ def salvar_todos_usuarios(usuarios):
         json.dump(usuarios, f, ensure_ascii=False, indent=4)
 
 def carregar_contas_salvas_locais():
-    # Recupera as contas salvas direto do LocalStorage do navegador atual
-    dados_locais = st.browser_storage.get("clicker_contas_salvas")
-    if dados_locais:
+    # Recupera o ID único deste navegador na URL
+    device_id = st.query_params.get("device_id", "")
+    if not device_id:
+        return {}
+        
+    if os.path.exists(DISPOSITIVOS_FILE):
         try:
-            return json.loads(dados_locais)
+            with open(DISPOSITIVOS_FILE, "r", encoding="utf-8") as f:
+                todos_dispositivos = json.load(f)
+                return todos_dispositivos.get(device_id, {})
         except Exception:
             return {}
     return {}
 
 def salvar_conta_localmente(usuario, senha):
-    # Salva no LocalStorage do navegador do usuário atual
-    contas = carregar_contas_salvas_locais()
-    contas[usuario.lower()] = {"usuario": usuario, "senha": senha}
-    st.browser_storage.set("clicker_contas_salvas", json.dumps(contas))
+    # Se o navegador ainda não tiver um ID exclusivo na URL, gera um novo agora
+    if "device_id" not in st.query_params:
+        st.query_params["device_id"] = str(uuid.uuid4())[:8]
+        
+    device_id = st.query_params["device_id"]
+    
+    todos_dispositivos = {}
+    if os.path.exists(DISPOSITIVOS_FILE):
+        try:
+            with open(DISPOSITIVOS_FILE, "r", encoding="utf-8") as f:
+                todos_dispositivos = json.load(f)
+        except Exception:
+            pass
+            
+    if device_id not in todos_dispositivos:
+        todos_dispositivos[device_id] = {}
+        
+    todos_dispositivos[device_id][usuario.lower()] = {"usuario": usuario, "senha": senha}
+    
+    with open(DISPOSITIVOS_FILE, "w", encoding="utf-8") as f:
+        json.dump(todos_dispositivos, f, ensure_ascii=False, indent=4)
 
 def tem_titulo(titulo_necessario):
     if not st.session_state.get("logado") or not st.session_state.get("nome_usuario"):
@@ -233,7 +257,7 @@ if not st.session_state.logado:
                 st.session_state.nome_usuario = usuarios[user_key]["nome_exibicao"]
                 st.session_state.logado = True
                 
-                # Salva a sessão APENAS no navegador local de quem fez o login
+                # Salva a conta de forma estrita atrelada a este link/navegador
                 salvar_conta_localmente(usuarios[user_key]["nome_exibicao"], log_pass)
                 
                 usuarios[user_key]["ultimo_login"] = time.strftime("%Y-%m-%d %H:%M:%S")
@@ -285,7 +309,7 @@ if not st.session_state.logado:
                 else:
                     st.error("A senha mudou ou o usuário não existe mais no banco global.")
         else:
-            st.info("Nenhuma conta salva detectada neste dispositivo. Faça login manualmente uma vez para salvá-la aqui.")
+            st.info("Nenhuma conta salva detectada neste dispositivo/navegador. Faça login manualmente uma vez para que ela seja salva aqui.")
                 
     with aba_registro:
         st.subheader("Crie sua Conta")
