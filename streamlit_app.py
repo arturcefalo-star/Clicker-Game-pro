@@ -790,7 +790,7 @@ with st.sidebar:
     acesso_apoiador = tem_titulo("APD") or tem_titulo("ADM") or tem_titulo("DEV")
     exibir_painel_apoiador = False
     
-    if acceso_apoiador:
+    if acesso_apoiador:
         st.success(f"Acesso automático concedido via título [{st.session_state.titulo}]!")
         exibir_painel_apoiador = True
     else:
