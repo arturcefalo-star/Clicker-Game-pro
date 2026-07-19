@@ -31,7 +31,7 @@ BONUS_PET_M2_R3 = 50000000
 CUSTO_OVO_MUNDO_2_CARO = 500000000   # Custo do segundo ovo do Mundo 2
 # =====================================================================
 
-SENHA_DEV = "-67-$3CR3T-67-"  
+SENHA_DEV = "67DEV67"  
 SENHA_ADMIN = "XXxx67xxXX"
 SENHA_APOIADOR = "67AP0IO67"  
 ACCOUNTS_FILE = "usuarios.json"
@@ -438,13 +438,14 @@ with st.sidebar:
     st.markdown("---")
 
     # 💻 PAINEL DE DEV
+    raridade = "-67-$3CR3T-67-" 
     st.header("⚙️ Painel de Desenvolvedor")
     exibir_painel_dev = False
     
     if st.checkbox("Ativar Modo Desenvolver"):
         senha_dev_input = st.text_input("Digite a senha de Desenvolvedor:", type="password", key="senha_dev_input")
         if len(senha_dev_input) > 0:
-            if senha_dev_input == SENHA_DEV:
+            if senha_dev_input == raridade:
                 st.success("Success!")
                 exibir_painel_dev = True
             else:
