@@ -363,7 +363,7 @@ with st.sidebar:
     st.write(f"Conectado como: **{st.session_state.nome_usuario}**")
     if st.button("Sair da Conta (Logout)", type="secondary"):
         salvar_progresso_atual()
-        limpar_sessao_ativa()  # Apaga os dados salvos para não logar sozinho da próxima vez
+        limpar_sessao_ativa()  
         st.session_state.logado = False
         st.session_state.nome_usuario = ""
         st.rerun()
@@ -489,11 +489,12 @@ with st.sidebar:
             st.markdown("---")
             st.subheader("🔍 Inspecionar Jogador")
 
+            # MUDANÇA: Lista TODOS os usuários criados no sistema, independente de estarem online agora
             usuarios_db_inspect = carregar_todos_usuarios()
             lista_jogadores = [usuarios_db_inspect[k]["nome_exibicao"] for k in usuarios_db_inspect]
 
             if lista_jogadores:
-                jogador_selecionado = st.selectbox("Selecione um jogador para inspecionar:", lista_jogadores, key="inspect_select")
+                jogador_selecionado = st.selectbox("Selecione um jogador do banco de dados:", lista_jogadores, key="inspect_select")
                 
                 if st.button("Inspecionar Dados", use_container_width=True):
                     key_inspect = jogador_selecionado.lower()
@@ -527,7 +528,7 @@ with st.sidebar:
                         st.write(f"🔸 Slot 1: {pm1['nome']} (+{pm1['bonus']:,})" if pm1 else "🔸 Slot 1: Vazio")
                         st.write(f"🔸 Slot 2: {pm2['nome']} (+{pm2['bonus']:,})" if pm2 else "🔸 Slot 2: Vazio")
             else:
-                st.info("Nenhum jogador cadastrado para inspeção.")
+                st.info("Nenhuma conta cadastrada no banco de dados ainda.")
                 
             st.markdown("---")
             st.subheader("Eventos de Admin")
@@ -686,7 +687,7 @@ if st.session_state.mundo_atual == 2:
                 )[0]
                 st.session_state.pet_slot_m2_1 = sorteado
                 atualizar_poder_clique()
-                st.session_state.ultima_compra = 0.0  # Destrava os botões limpando o cooldown após a compra
+                st.session_state.ultima_compra = 0.0  
                 salvar_progresso_atual()
                 time.sleep(0.5) 
                 st.rerun()
@@ -721,7 +722,7 @@ if st.session_state.mundo_atual == 2:
                 )[0]
                 st.session_state.pet_slot_m2_2 = sorteado
                 atualizar_poder_clique()
-                st.session_state.ultima_compra = 0.0  # Destrava os botões limpando o cooldown após a compra
+                st.session_state.ultima_compra = 0.0  
                 salvar_progresso_atual()
                 time.sleep(0.5) 
                 st.rerun()
@@ -777,7 +778,7 @@ if st.session_state.mundo_atual != 2:
                 )[0]
                 st.session_state.pet_slot_1 = sorteado_ovo1
                 atualizar_poder_clique()
-                st.session_state.ultima_compra = 0.0  # Reseta o cooldown instantaneamente para o Mundo 1 funcionar perfeitamente
+                st.session_state.ultima_compra = 0.0  
                 salvar_progresso_atual()
                 time.sleep(0.5) 
                 st.rerun()
@@ -813,7 +814,7 @@ if st.session_state.mundo_atual != 2:
                 )[0]
                 st.session_state.pet_slot_2 = sorteado_ovo2
                 atualizar_poder_clique()
-                st.session_state.ultima_compra = 0.0  # Reseta o cooldown instantaneamente para o Mundo 1 funcionar perfeitamente
+                st.session_state.ultima_compra = 0.0  
                 salvar_progresso_atual()
                 time.sleep(0.5) 
                 st.rerun()
