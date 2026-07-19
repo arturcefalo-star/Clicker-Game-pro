@@ -32,11 +32,11 @@ CUSTO_OVO_MUNDO_2_CARO = 500000000   # Custo do segundo ovo do Mundo 2
 # =====================================================================
 
 SENHA_ADMIN = "XXxx67xxXX"
-SENHA_APOIADOR = "67AP0IO67"  # Nova senha para o painel de apoiador
+SENHA_APOIADOR = "67AP0IO67"  
 ACCOUNTS_FILE = "usuarios.json"
 LEADERBOARD_FILE = "leaderboard.json"
 AVISOS_FILE = "avisos.json"
-SESSION_FILE = "sessao_ativa.json"  # Arquivo que lembra quem está logado
+SESSION_FILE = "sessao_ativa.json"  
 
 # --- FUNÇÕES DE GERENCIAMENTO DE USUÁRIOS E SALVAMENTO ---
 
@@ -54,12 +54,13 @@ def salvar_todos_usuarios(usuarios):
         json.dump(usuarios, f, ensure_ascii=False, indent=4)
 
 def tem_titulo(titulo_necessario):
-    """Verifica se o usuário atualmente logado possui o título especificado."""
+    """Verifica em tempo real no banco de dados se o usuário logado possui o título."""
     if not st.session_state.get("logado") or not st.session_state.get("nome_usuario"):
         return False
     usuarios = carregar_todos_usuarios()
     user_key = st.session_state.nome_usuario.lower()
     if user_key in usuarios:
+        # Puxa o título salvo direto no arquivo JSON para atualizar na hora para outros players
         return usuarios[user_key]["dados"].get("titulo") == titulo_necessario
     return False
 
@@ -80,7 +81,7 @@ def salvar_progresso_atual():
                 "ultimo_tick": st.session_state.ultimo_tick,
                 "mundo_2_desbloqueado": st.session_state.mundo_2_desbloqueado,
                 "mundo_atual": st.session_state.mundo_atual,
-                "titulo": st.session_state.get("titulo", "")
+                "titulo": usuarios[username_key]["dados"].get("titulo", "") # Mantém o título do banco intacto ao salvar
             }
             usuarios[username_key]["ultimo_login"] = time.strftime("%Y-%m-%d %H:%M:%S")
             salvar_todos_usuarios(usuarios)
@@ -160,7 +161,6 @@ def salvar_configuracoes_globais(dados):
     with open(AVISOS_FILE, "w", encoding="utf-8") as f:
         json.dump(dados, f, ensure_ascii=False, indent=4)
 
-# --- FUNÇÕES DE AUTO-LOGIN (PERSISTÊNCIA DE SESSÃO) ---
 def salvar_sessao_ativa(username):
     with open(SESSION_FILE, "w", encoding="utf-8") as f:
         json.dump({"usuario_ativo": username}, f)
@@ -280,7 +280,7 @@ if not st.session_state.logado:
     st.stop()
 
 # =====================================================================
-# 🎮 INTERFACE E LOGICA PRINCIPAL DO JORO (APÓS LOGAR)
+# 🎮 INTERFACE E LOGICA PRINCIPAL DO JOGO
 # =====================================================================
 
 if "poder_clique" not in st.session_state:
@@ -293,7 +293,13 @@ if "pontos_leaderboard_cache" not in st.session_state:
     st.session_state.pontos_leaderboard_cache = st.session_state.pontos
 if "ultimo_tick" not in st.session_state:
     st.session_state.ultimo_tick = time.time()
-if "titulo" not in st.session_state:
+
+# Atualiza a variável de título interna baseado no arquivo físico
+usuarios_temp = carregar_todos_usuarios()
+user_key_temp = st.session_state.nome_usuario.lower()
+if user_key_temp in usuarios_temp:
+    st.session_state.titulo = usuarios_temp[user_key_temp]["dados"].get("titulo", "")
+else:
     st.session_state.titulo = ""
 
 config_globais = carregar_configuracoes_globais()
@@ -392,7 +398,6 @@ with st.sidebar:
     # 👑 PAINEL DE ADMIN
     st.header("⚙️ Painel de Admin")
     
-    # Valida acesso por Título ADM automático ou verificação manual por senha
     acesso_admin = tem_titulo("ADM")
     exibir_painel_admin = False
     
@@ -468,7 +473,7 @@ with st.sidebar:
                 
                 if col_adm3.button("Add", key=f"add_{key_jogador}_{i}"):
                     if key_jogador in usuarios_db:
-                        usuarios_db[key_jogador]["dados"]["pontos"] = max(0, usuarios_db[key_jogador]["dados"].get("pontos", 0) + qtd_pontos)
+                        usuarios_db[key_jogador]["dados"]["pontos"] = max(0, usuarios_db[key_jogador]["dados'].get("pontos", 0) + qtd_pontos)
                         salvar_todos_usuarios(usuarios_db)
                         
                     if key_jogador == st.session_state.nome_usuario.lower():
@@ -620,7 +625,7 @@ with st.sidebar:
         if st.button("Desativar", type="secondary", use_container_width=True, disabled=(mult_evento == 1), key="btn_desativar_evento"):
             config_globais["multiplicador_evento"] = 1
             salvar_configuracoes_globais(config_globais)
-            st.warning("Multiplicador do Evento Desativado!")
+            st.warning("Multiplicador do Evento Disativado!")
             time.sleep(0.4)
             st.rerun()
 
@@ -665,7 +670,6 @@ with st.sidebar:
     # ⭐ PAINEL DE APOIADOR
     st.header("⚙️ Painel de Apoiador")
     
-    # Valida acesso por Título APD automático, Título ADM ou verificação manual por senha
     acesso_apoiador = tem_titulo("APD") or tem_titulo("ADM")
     exibir_painel_apoiador = False
     
