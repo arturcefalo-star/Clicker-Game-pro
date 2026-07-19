@@ -624,13 +624,13 @@ with st.sidebar:
         if len(senha_apoio_input) > 0 and senha_apoio_input == SENHA_APOIADOR:
             st.success("Success!")
             
-            st.subheader("adicionar/remover seus pontos")
-            qtd_pontos_apoio = st.number_input("Quantidade de pontos para Si Mesmo:", min_value=1, value=50000, step=1000, key="qtd_pontos_apoio")
+            st.subheader("Add/Rem seus pontos")
+            qtd_pontos_apoio = st.number_input("Quantidade de pontos para Add/Rem:", min_value=1, value=50000, step=1000, key="qtd_pontos_apoio")
             
             st.subheader("Seu saldo:")
             
             col_apoio1, col_apoio2, col_apoio3 = st.columns([2, 1, 1])
-            col_apoio1.write(f"**Você ({st.session_state.nome_usuario})**: {st.session_state.pontos} pts")
+            col_apoio1.write(f"**Você {st.session_state.nome_usuario}**: {st.session_state.pontos} pts")
             
             if col_apoio2.button("Add", key="add_pontos_apoio", use_container_width=True):
                 usuarios_db = carregar_todos_usuarios()
