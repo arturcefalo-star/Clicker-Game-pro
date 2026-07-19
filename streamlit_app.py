@@ -541,8 +541,7 @@ with st.sidebar:
                 st.markdown("---")
         else:
             st.info("Placar vazio.")
-
-        st.markdown("---")
+            
         st.subheader("Inspecionar Jogador")
 
         usuarios_db_inspect = carregar_todos_usuarios()
