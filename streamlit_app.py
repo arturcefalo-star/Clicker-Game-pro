@@ -43,6 +43,17 @@ ACCOUNTS_FILE = "usuarios.json"
 LEADERBOARD_FILE = "leaderboard.json"
 AVISOS_FILE = "avisos.json"
 
+# --- CONFIGURAÇÃO DO POOL DE TOTENS ---
+TOTENS_DISPONIVEIS = [
+    {"nome": "Totem de Madeira", "raridade": "Comum", "multiplicador": 1.2, "custo": 500, "chance": 40},
+    {"nome": "Totem de Pedra", "raridade": "Comum", "multiplicador": 1.5, "custo": 2500, "chance": 25},
+    {"nome": "Totem de Ferro", "raridade": "Raro", "multiplicador": 2.0, "custo": 15000, "chance": 15},
+    {"nome": "Totem de Ouro", "raridade": "Raro", "multiplicador": 3.5, "custo": 75000, "chance": 10},
+    {"nome": "Totem de Diamante", "raridade": "Épico", "multiplicador": 5.0, "custo": 500000, "chance": 6},
+    {"nome": "Totem de Obsidiana", "raridade": "Lendário", "multiplicador": 7.5, "custo": 5000000, "chance": 3},
+    {"nome": "Totem Mítico do Olimpo", "raridade": "Mítico", "multiplicador": 10.0, "custo": 50000000, "chance": 1}
+]
+
 # --- FUNÇÕES DE GERENCIAMENTO DE USUÁRIOS NO SERVIDOR ---
 
 def carregar_todos_usuarios():
@@ -81,6 +92,7 @@ def salvar_progresso_atual():
                 "pet_slot_2": st.session_state.pet_slot_2,
                 "pet_slot_m2_1": st.session_state.pet_slot_m2_1,
                 "pet_slot_m2_2": st.session_state.pet_slot_m2_2,
+                "totem_equipado": st.session_state.totem_equipado,
                 "ultimo_tick": st.session_state.ultimo_tick,
                 "mundo_2_desbloqueado": st.session_state.mundo_2_desbloqueado,
                 "mundo_atual": st.session_state.mundo_atual,
@@ -130,7 +142,7 @@ def atualizar_no_leaderboard(nome, pontos):
             j["Jogador"] = nome
             break
             
-    if not encontrado:
+    if not encontrar:
         leaderboard.append({"Jogador": nome, "Pontos": pontos})
     
     leaderboard = sorted(leaderboard, key=lambda x: x["Pontos"], reverse=True)
@@ -174,6 +186,7 @@ def resetar_estados_jogador_local():
     st.session_state.pet_slot_2 = None
     st.session_state.pet_slot_m2_1 = None
     st.session_state.pet_slot_m2_2 = None
+    st.session_state.totem_equipado = None
     st.session_state.mundo_2_desbloqueado = False
     st.session_state.mundo_atual = 1
     st.session_state.titulo = ""
@@ -190,6 +203,7 @@ def injetar_js_localstorage():
         let contas = localStorage.getItem("clicker_saved_accounts") || "{}";
         const streamlitInput = parentDoc.querySelector('input[aria-label="bridge_storage_input"]');
         if (streamlitInput && streamlitInput.value !== contas) {
+            // Só atualiza se o valor vindo do localStorage for válido para evitar inputs fantasmas
             if (contas !== "{}") {
                 streamlitInput.value = contas;
                 streamlitInput.dispatchEvent(new Event('input', { bubbles: true }));
@@ -216,6 +230,7 @@ def injetar_js_localstorage():
         }
     });
 
+    // Força execução rápida inicial e repetições curtas
     setTimeout(sincronizar, 100);
     setInterval(sincronizar, 1000);
     </script>
@@ -233,6 +248,7 @@ if "nome_usuario" not in st.session_state:
 bridge_data = st.text_input("bridge_storage_input", key="bridge_storage_input", label_visibility="collapsed")
 injetar_js_localstorage()
 
+# Restaura as contas locais do LocalStorage e injeta de volta para o Servidor se necessário
 try:
     contas_locais = json.loads(bridge_data) if bridge_data else {}
     if contas_locais:
@@ -247,6 +263,7 @@ try:
 except Exception:
     contas_locais = {}
 
+# Re-sincroniza o banco local do servidor com o que o jogador salvou no navegador
 todos_usuarios_server = carregar_todos_usuarios()
 for k, v in contas_locais.items():
     if k not in todos_usuarios_server:
@@ -280,6 +297,7 @@ if not st.session_state.logado:
                 st.session_state.pet_slot_2 = dados.get("pet_slot_2", None)
                 st.session_state.pet_slot_m2_1 = dados.get("pet_slot_m2_1", None)
                 st.session_state.pet_slot_m2_2 = dados.get("pet_slot_m2_2", None)
+                st.session_state.totem_equipado = dados.get("totem_equipado", None)
                 st.session_state.ultimo_tick = dados.get("ultimo_tick", time.time())
                 st.session_state.mundo_2_desbloqueado = dados.get("mundo_2_desbloqueado", False)
                 st.session_state.mundo_atual = dados.get("mundo_atual", 1)
@@ -291,6 +309,7 @@ if not st.session_state.logado:
                 
                 st.session_state["tmp_logged_password"] = log_pass
                 
+                # Garante que ao logar com sucesso ela se auto-salve no LocalStorage local do navegador também
                 st.components.v1.html(f"""
                 <script>
                 window.parent.postMessage({{
@@ -335,6 +354,7 @@ if not st.session_state.logado:
                     st.session_state.pet_slot_2 = dados.get("pet_slot_2", None)
                     st.session_state.pet_slot_m2_1 = dados.get("pet_slot_m2_1", None)
                     st.session_state.pet_slot_m2_2 = dados.get("pet_slot_m2_2", None)
+                    st.session_state.totem_equipado = dados.get("totem_equipado", None)
                     st.session_state.ultimo_tick = dados.get("ultimo_tick", time.time())
                     st.session_state.mundo_2_desbloqueado = dados.get("mundo_2_desbloqueado", False)
                     st.session_state.mundo_atual = dados.get("mundo_atual", 1)
@@ -389,7 +409,7 @@ if not st.session_state.logado:
                     "dados": {
                         "pontos": 0, "poder_base": 1, "pontos_por_segundo": 0,
                         "pet_slot_1": None, "pet_slot_2": None,
-                        "pet_slot_m2_1": None, "pet_slot_m2_2": None,
+                        "pet_slot_m2_1": None, "pet_slot_m2_2": None, "totem_equipado": None,
                         "ultimo_tick": time.time(), "mundo_2_desbloqueado": False, "mundo_atual": 1,
                         "titulo": ""
                     }
@@ -397,6 +417,7 @@ if not st.session_state.logado:
                 usuarios[user_key] = nova_conta
                 salvar_todos_usuarios(usuarios)
                 
+                # Registra imediatamente no navegador para evitar perdas
                 st.components.v1.html(f"""
                 <script>
                 window.parent.postMessage({{
@@ -415,7 +436,7 @@ if not st.session_state.logado:
     st.stop()
 
 # =====================================================================
-# 🎮 INTERFACE E LOGICA PRINCIPAL DO JOGO
+# 🎮 INTERFACE E LOGICA PRINCIPAL DO JOGO (SEGUE O RESTANTE DO SEU CÓDIGO)
 # =====================================================================
 
 if "poder_clique" not in st.session_state:
@@ -428,18 +449,44 @@ if "pontos_leaderboard_cache" not in st.session_state:
     st.session_state.pontos_leaderboard_cache = st.session_state.pontos
 if "ultimo_tick" not in st.session_state:
     st.session_state.ultimo_tick = time.time()
+if "totem_equipado" not in st.session_state:
+    st.session_state.totem_equipado = None
 
 usuarios_temp = carregar_todos_usuarios()
 user_key_temp = st.session_state.nome_usuario.lower()
 if user_key_temp in usuarios_temp:
     st.session_state.titulo = usuarios_temp[user_key_temp]["dados"].get("titulo", "")
+    st.session_state.totem_equipado = usuarios_temp[user_key_temp]["dados"].get("totem_equipado", None)
 else:
     st.session_state.titulo = ""
+    st.session_state.totem_equipado = None
 
 config_globais = carregar_configuracoes_globais()
 aviso_sistema = config_globais.get("mensagem", "")
 mult_evento = config_globais.get("multiplicador_evento", 1) 
 mult_sorte = config_globais.get("multiplicador_sorte", 1)
+
+# --- SISTEMA DE GERAÇÃO ROTATIVA DA LOJA DE TOTENS ---
+def obter_totens_da_rodada():
+    minuto_atual = int(time.time() / 300) # Muda a cada 5 minutos (300 segundos)
+    random.seed(minuto_atual)
+    
+    chances = [t["chance"] for t in TOTENS_DISPONIVEIS]
+    
+    # Sorteia 3 totens distintos baseados no seed do período
+    totens_escolhidos = []
+    pool_copia = list(TOTENS_DISPONIVEIS)
+    
+    for _ in range(3):
+        if not pool_copia:
+            break
+        pesos = [t["chance"] for t in pool_copia]
+        sorteado = random.choices(pool_copia, weights=pesos, k=1)[0]
+        totens_escolhidos.append(sorteado)
+        pool_copia.remove(sorteado)
+        
+    random.seed() # Reseta o seed global para não quebrar a aleatoriedade dos ovos
+    return totens_escolhidos
 
 def calcular_bonus_pet(pet):
     if not pet:
@@ -454,6 +501,11 @@ def atualizar_poder_clique():
     bonus_total += calcular_bonus_pet(st.session_state.pet_slot_m2_2)
     
     poder_calculado = st.session_state.poder_base + bonus_total
+    
+    # Aplica multiplicador do totem se houver um equipado
+    if st.session_state.totem_equipado:
+        poder_calculado = int(poder_calculado * st.session_state.totem_equipado["multiplicador"])
+        
     st.session_state.poder_clique = poder_calculado * mult_evento
 
 def calcular_chances_ovo(c1, c2, c3_base):
@@ -486,6 +538,9 @@ anti_lag_ticker()
 
 def renderizar_area_clique():
     st.metric(label="Pontos Atuais", value=f"{st.session_state.pontos:,}")
+    
+    if st.session_state.totem_equipado:
+        st.write(f"🌟 **Totem Ativo:** {st.session_state.totem_equipado['nome']} ({st.session_state.totem_equipado['multiplicador']}x Crítico)")
     
     if st.session_state.mundo_atual == 2:
         if st.button("            Click Here          ", key="click_m2_btn", use_container_width=True):
@@ -524,6 +579,7 @@ with st.sidebar:
     st.write(f"Conectado como: **{prefixo_exibicao}{st.session_state.nome_usuario}**")
     
     st.caption("✓ Conta sincronizada no navegador.")
+    # Força salvamento manual se quiser garantir o backup imediato
     if st.button("🔄 Forçar Redundância Manual", use_container_width=True):
         usuarios = carregar_todos_usuarios()
         key_user = st.session_state.nome_usuario.lower()
@@ -538,7 +594,7 @@ with st.sidebar:
             }}, "*");
             </script>
             """, height=0, width=0)
-            st.toast("Backup local updated!")
+            st.toast("Backup local atualizado!")
 
     if st.button("Sair da Conta (Logout)", type="secondary", use_container_width=True):
         salvar_progresso_atual()
@@ -690,6 +746,10 @@ with st.sidebar:
                     pm2 = dados_player.get("pet_slot_m2_2")
                     st.write(f"Slot 1: {pm1['nome']} (+{pm1['bonus']:,})" if pm1 else "Slot 1: Vazio")
                     st.write(f"Slot 2: {pm2['nome']} (+{pm2['bonus']:,})" if pm2 else "Slot 2: Vazio")
+                
+                st.markdown(" **Totem Equipado:**")
+                tot_player = dados_player.get("totem_equipado")
+                st.write(f"{tot_player['nome']} ({tot_player['multiplicador']}x)" if tot_player else "Nenhum Totem Equipado")
         else:
             st.info("Nenhuma conta cadastrada no banco de dados ainda.")
         
@@ -1123,6 +1183,37 @@ if st.session_state.mundo_atual != 2:
 
 st.markdown("---")
 
+# --- 🌟 NOVA LOJA DE TOTENS ROTATIVA DE 5 MINUTOS 🌟 ---
+st.subheader("🛒 Loja de Totens Místicos")
+tempo_restante_segundos = 300 - (int(time.time()) % 300)
+st.caption(f"⏳ Os itens da loja mudam globalmente em: **{int(tempo_restante_segundos/60)}m {tempo_restante_segundos%60}s**")
+
+totens_da_rodada = obter_totens_da_rodada()
+col_tot1, col_tot2, col_tot3 = st.columns(3)
+colunas_totens = [col_tot1, col_tot2, col_tot3]
+
+for idx, totem in enumerate(totens_da_rodada):
+    with colunas_totens[idx]:
+        st.markdown(f"##### {totem['nome']}")
+        st.write(f"⭐ **Raridade:** {totem['raridade']}")
+        st.write(f"⚔️ **Bônus:** {totem['multiplicador']}x Crítico")
+        st.write(f"💰 **Custo:** {totem['custo']:,} Pts")
+        
+        btn_desativado = st.session_state.pontos < totem['custo'] or loja_em_cooldown
+        if st.button(f"Comprar Totem", key=f"btn_buy_totem_{idx}", disabled=btn_desativado, use_container_width=True):
+            if st.session_state.pontos >= totem['custo']:
+                st.session_state.ultima_compra = time.time()
+                st.session_state.pontos -= totem['custo']
+                st.session_state.totem_equipado = totem
+                atualizar_poder_clique()
+                st.session_state.pontos_leaderboard_cache = st.session_state.pontos
+                salvar_progresso_atual()
+                st.success(f"Equipado: {totem['nome']}!")
+                time.sleep(0.5)
+                st.rerun()
+
+st.markdown("---")
+
 # --- LOJA DE MELHORIAS ---
 st.subheader("Loja de Melhorias")
 
@@ -1196,71 +1287,13 @@ with col2:
 if st.session_state.nome_usuario:
     atualizar_no_leaderboard(st.session_state.nome_usuario, st.session_state.pontos)
 
-# =====================================================================
-# 🗿 SISTEMA DE TOTENS
-# =====================================================================
-st.markdown("---")
-st.subheader("🗿 Sistema de Totens")
-
-if "totem_clique_nivel" not in st.session_state:
-    st.session_state.totem_clique_nivel = 0
-if "totem_passivo_nivel" not in st.session_state:
-    st.session_state.totem_passivo_nivel = 0
-
-CUSTO_BASE_TOTEM = 5000000
-MULTIPLICADOR_CUSTO_TOTEM = 3.5
-
-bonus_totem_clique = st.session_state.totem_clique_nivel * 50000
-bonus_totem_passivo = st.session_state.totem_passivo_nivel * 25000
-
-custo_prox_totem_clique = int(CUSTO_BASE_TOTEM * (MULTIPLICADOR_CUSTO_TOTEM ** st.session_state.totem_clique_nivel))
-custo_prox_totem_passivo = int(CUSTO_BASE_TOTEM * (MULTIPLICADOR_CUSTO_TOTEM ** st.session_state.totem_passivo_nivel))
-
-col_totem1, col_totem2 = st.columns(2)
-
-with col_totem1:
-    st.markdown("### Totem Ancestral do Clique")
-    st.write(f"Nível Atual: **{st.session_state.totem_clique_nivel}**")
-    st.write(f"Bônus Ativo: **+{bonus_totem_clique:,}** ao Poder Base")
-    
-    desativar_totem_clique = st.session_state.pontos < custo_prox_totem_clique or loja_em_cooldown
-    if st.button(f"Evoluir Totem ({custo_prox_totem_clique:,} Pts)", key="btn_upgrade_totem_clique", disabled=desativar_totem_clique, use_container_width=True):
-        if st.session_state.pontos >= custo_prox_totem_clique:
-            st.session_state.ultima_compra = time.time()
-            st.session_state.pontos -= custo_prox_totem_clique
-            st.session_state.totem_clique_nivel += 1
-            st.session_state.poder_base += 50000
-            atualizar_poder_clique()
-            st.session_state.pontos_leaderboard_cache = st.session_state.pontos
-            salvar_progresso_atual()
-            st.success("O Totem do Clique canalizou sua energia ancestral!")
-            time.sleep(0.3)
-            st.rerun()
-
-with col_totem2:
-    st.markdown("### Totem Sagrado do Tempo")
-    st.write(f"Nível Atual: **{st.session_state.totem_passivo_nivel}**")
-    st.write(f"Bônus Ativo: **+{bonus_totem_passivo:,}/s** Pontos Passivos")
-    
-    desativar_totem_passivo = st.session_state.pontos < custo_prox_totem_passivo or loja_em_cooldown
-    if st.button(f"Evoluir Totem ({custo_prox_totem_passivo:,} Pts)", key="btn_upgrade_totem_passivo", disabled=desativar_totem_passivo, use_container_width=True):
-        if st.session_state.pontos >= custo_prox_totem_passivo:
-            st.session_state.ultima_compra = time.time()
-            st.session_state.pontos -= custo_prox_totem_passivo
-            st.session_state.totem_passivo_nivel += 1
-            st.session_state.pontos_por_segundo += 25000
-            st.session_state.pontos_leaderboard_cache = st.session_state.pontos
-            salvar_progresso_atual()
-            st.success("O Totem do Tempo acelerou a produção passiva!")
-            time.sleep(0.3)
-            st.rerun()
-
 # --- LOG DE ATUALIZAÇÕES ---
 st.markdown("---")
 st.subheader("Atualizações:")
 st.write("(3.0.0) - Criação do Painel do DEV exclusivo e limitação do painel ADM")
 st.write("(3.0.2) - Correção da oscilação/piscar da tela gerada pelo loop anti-lag utilizando fragmentação invisível.")
 st.write("(3.3.0) - Correção Definitiva do Sistema de Persistência no Navegador (LocalStorage Sync Fix).")
+st.write("(3.4.0) - Adicionado Sistema Global de Loja de Totens Místicos rotativos a cada 5 minutos.")
 
 # --- 🏆 TABELA DE CLASSIFICAÇÃO GLOBAL ---
 st.markdown("---")
@@ -1308,12 +1341,13 @@ else:
                 usuarios[user_key]["dados"] = {
                     "pontos": 0, "poder_base": 1, "pontos_por_segundo": 0,
                     "pet_slot_1": None, "pet_slot_2": None,
-                    "pet_slot_m2_1": None, "pet_slot_m2_2": None,
+                    "pet_slot_m2_1": None, "pet_slot_m2_2": None, "totem_equipado": None,
                     "ultimo_tick": time.time(), "mundo_2_desbloqueado": False, "mundo_atual": 1,
                     "titulo": ""
                 }
                 salvar_todos_usuarios(usuarios)
             
+            # Limpa do navegador também se resetar tudo
             st.components.v1.html(f"""<script>window.parent.postMessage({{type: "REMOVE_ACCOUNT", user: "{user_key}"}}, "*");</script>""", height=0, width=0)
             resetar_estados_jogador_local()
             st.success("Jogo reiniciado com sucesso!")
