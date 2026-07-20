@@ -3,7 +3,6 @@ import time
 import random
 import json
 import os
-import uuid
 from streamlit_autorefresh import st_autorefresh
 
 # =====================================================================
@@ -32,13 +31,12 @@ BONUS_PET_M2_R3 = 50000000
 CUSTO_OVO_MUNDO_2_CARO = 500000000   # Custo do segundo ovo do Mundo 2
 # =====================================================================
 
-SENHA_DEV = "--$3CR3T--"  
+SENHA_DEV = "<<==67==>>"  
 SENHA_ADMIN = "XXxx67xxXX"
 SENHA_APOIADOR = "67AP0IO67"  
 ACCOUNTS_FILE = "usuarios.json"
 LEADERBOARD_FILE = "leaderboard.json"
 AVISOS_FILE = "avisos.json"
-DISPOSITIVOS_FILE = "contas_dispositivos.json"
 
 # --- FUNÇÕES DE GERENCIAMENTO DE USUÁRIOS E SALVAMENTO ---
 
@@ -54,44 +52,6 @@ def carregar_todos_usuarios():
 def salvar_todos_usuarios(usuarios):
     with open(ACCOUNTS_FILE, "w", encoding="utf-8") as f:
         json.dump(usuarios, f, ensure_ascii=False, indent=4)
-
-def carregar_contas_salvas_locais():
-    # Recupera o ID único deste navegador na URL
-    device_id = st.query_params.get("device_id", "")
-    if not device_id:
-        return {}
-        
-    if os.path.exists(DISPOSITIVOS_FILE):
-        try:
-            with open(DISPOSITIVOS_FILE, "r", encoding="utf-8") as f:
-                todos_dispositivos = json.load(f)
-                return todos_dispositivos.get(device_id, {})
-        except Exception:
-            return {}
-    return {}
-
-def salvar_conta_localmente(usuario, senha):
-    # Se o navegador ainda não tiver um ID exclusivo na URL, gera um novo agora
-    if "device_id" not in st.query_params:
-        st.query_params["device_id"] = str(uuid.uuid4())[:8]
-        
-    device_id = st.query_params["device_id"]
-    
-    todos_dispositivos = {}
-    if os.path.exists(DISPOSITIVOS_FILE):
-        try:
-            with open(DISPOSITIVOS_FILE, "r", encoding="utf-8") as f:
-                todos_dispositivos = json.load(f)
-        except Exception:
-            pass
-            
-    if device_id not in todos_dispositivos:
-        todos_dispositivos[device_id] = {}
-        
-    todos_dispositivos[device_id][usuario.lower()] = {"usuario": usuario, "senha": senha}
-    
-    with open(DISPOSITIVOS_FILE, "w", encoding="utf-8") as f:
-        json.dump(todos_dispositivos, f, ensure_ascii=False, indent=4)
 
 def tem_titulo(titulo_necessario):
     if not st.session_state.get("logado") or not st.session_state.get("nome_usuario"):
@@ -223,12 +183,12 @@ if "nome_usuario" not in st.session_state:
     st.session_state.nome_usuario = ""
 
 # =====================================================================
-# 🔐 TELA DE LOGIN / REGISTRO COM SESSÕES PRIVADAS E LOCAIS
+# 🔐 TELA DE LOGIN / REGISTRO OBRIGATÓRIO (SEM AUTO-LOGIN)
 # =====================================================================
 if not st.session_state.logado:
     st.title("Clicker Game - Login")
     
-    aba_login, aba_salvas, aba_registro = st.tabs(["Entrar na Conta", "Contas Já Criadas 💾", "Criar Nova Conta"])
+    aba_login, aba_registro = st.tabs(["Entrar na Conta", "Criar Nova Conta"])
     
     with aba_login:
         st.subheader("Faça seu Login")
@@ -257,9 +217,6 @@ if not st.session_state.logado:
                 st.session_state.nome_usuario = usuarios[user_key]["nome_exibicao"]
                 st.session_state.logado = True
                 
-                # Salva a conta de forma estrita atrelada a este link/navegador
-                salvar_conta_localmente(usuarios[user_key]["nome_exibicao"], log_pass)
-                
                 usuarios[user_key]["ultimo_login"] = time.strftime("%Y-%m-%d %H:%M:%S")
                 salvar_todos_usuarios(usuarios)
                 
@@ -268,48 +225,6 @@ if not st.session_state.logado:
                 st.rerun()
             else:
                 st.error("Usuário ou senha incorretos.")
-
-    with aba_salvas:
-        st.subheader("Entrar com Conta já Criada neste Navegador")
-        contas_locais = carregar_contas_salvas_locais()
-        
-        if contas_locais:
-            opcoes_contas = [dados["usuario"] for dados in contas_locais.values()]
-            conta_selecionada = st.selectbox("Escolha uma de suas contas salvas:", opcoes_contas)
-            
-            if st.button("Entrar Direto", type="primary", use_container_width=True):
-                key_selecionada = conta_selecionada.lower()
-                senha_salva = contas_locais[key_selecionada]["senha"]
-                
-                usuarios = carregar_todos_usuarios()
-                if key_selecionada in usuarios and usuarios[key_selecionada]["senha"] == senha_salva:
-                    dados = usuarios[key_selecionada]["dados"]
-                    st.session_state.pontos = dados.get("pontos", 0)
-                    st.session_state.poder_base = dados.get("poder_base", 1)
-                    st.session_state.pontos_por_segundo = dados.get("pontos_por_segundo", 0)
-                    st.session_state.pet_slot_1 = dados.get("pet_slot_1", None)
-                    st.session_state.pet_slot_2 = dados.get("pet_slot_2", None)
-                    st.session_state.pet_slot_m2_1 = dados.get("pet_slot_m2_1", None)
-                    st.session_state.pet_slot_m2_2 = dados.get("pet_slot_m2_2", None)
-                    st.session_state.ultimo_tick = dados.get("ultimo_tick", time.time())
-                    st.session_state.mundo_2_desbloqueado = dados.get("mundo_2_desbloqueado", False)
-                    st.session_state.mundo_atual = dados.get("mundo_atual", 1)
-                    st.session_state.titulo = dados.get("titulo", "")
-                    st.session_state.pontos_leaderboard_cache = dados.get("pontos", 0)
-                    
-                    st.session_state.nome_usuario = usuarios[key_selecionada]["nome_exibicao"]
-                    st.session_state.logado = True
-                    
-                    usuarios[key_selecionada]["ultimo_login"] = time.strftime("%Y-%m-%d %H:%M:%S")
-                    salvar_todos_usuarios(usuarios)
-                    
-                    st.success(f"Entrada rápida realizada com sucesso! Olá, {st.session_state.nome_usuario}!")
-                    time.sleep(0.5)
-                    st.rerun()
-                else:
-                    st.error("A senha mudou ou o usuário não existe mais no banco global.")
-        else:
-            st.info("Nenhuma conta salva detectada neste dispositivo/navegador. Faça login manualmente uma vez para que ela seja salva aqui.")
                 
     with aba_registro:
         st.subheader("Crie sua Conta")
@@ -341,7 +256,7 @@ if not st.session_state.logado:
                     }
                 }
                 salvar_todos_usuarios(usuarios)
-                st.success("Conta criada com sucesso! Entre na aba de Login ou Contas Criadas.")
+                st.success("Conta criada com sucesso! Faça login na aba ao lado.")
                 
     st.stop()
 
@@ -398,7 +313,7 @@ def calcular_chances_ovo(c1, c2, c3_base):
 
 atualizar_poder_clique()
 
-# Loop anti-lag invisível e sem piscar
+# 🛡️ LINHA ANTI-LAG ESTABILIZADA E CORRIGIDA (SEM ERROS E SEM PISCAR)
 @st.fragment
 def anti_lag_ticker():
     placeholder = st.empty()
@@ -1115,7 +1030,6 @@ st.markdown("---")
 st.subheader("Atualizações:")
 st.write("(3.0.0) - Criação do Painel do DEV exclusivo e limitação do painel ADM")
 st.write("(3.0.2) - Correção da oscilação/piscar da tela gerada pelo loop anti-lag utilizando fragmentação invisível.")
-st.write("(3.1.5) - Correção de Privacidade: Contas salvas vinculadas de forma estrita ao dispositivo local.")
 
 # --- 🏆 TABELA DE CLASSIFICAÇÃO GLOBAL ---
 st.markdown("---")
