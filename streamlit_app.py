@@ -142,7 +142,7 @@ def atualizar_no_leaderboard(nome, pontos):
             j["Jogador"] = nome
             break
             
-    if not encontrar:
+    if not encontrado:
         leaderboard.append({"Jogador": nome, "Pontos": pontos})
     
     leaderboard = sorted(leaderboard, key=lambda x: x["Pontos"], reverse=True)
@@ -468,7 +468,7 @@ mult_sorte = config_globais.get("multiplicador_sorte", 1)
 
 # --- SISTEMA DE GERAÇÃO ROTATIVA DA LOJA DE TOTENS ---
 def obter_totens_da_rodada():
-    minuto_atual = int(time.time() / 300) # Muda a cada 5 minutos (300 segundos)
+    minuto_atual = int(time.time() / 300) # Muda a cada 5 minutes (300 segundos)
     random.seed(minuto_atual)
     
     chances = [t["chance"] for t in TOTENS_DISPONIVEIS]
@@ -955,7 +955,7 @@ with st.sidebar:
             usuarios_db = carregar_todos_usuarios()
             key_jogador = st.session_state.nome_usuario.lower()
             if key_jogador in usuarios_db:
-                usuarios_db[key_jogador]["dados"]["pontos"] = max(0, usuarios_db[key_jogador]["dados"].get("pontos", 0) + qtd_pontos_apoio)
+                usuarios_db[key_jogador]["dados"]["pontos"] = max(0, usuarios_db[key_jogador]["dados'].get("pontos", 0) + qtd_pontos_apoio)
                 salvar_todos_usuarios(usuarios_db)
             st.session_state.pontos += qtd_pontos_apoio
             st.session_state.pontos_leaderboard_cache = st.session_state.pontos
@@ -1306,7 +1306,7 @@ if os.path.exists(LEADERBOARD_FILE):
         usuarios_unicos = {}
         for jogador in dados_placar:
             nome = jogador["Jogador"]
-            pontos = jogador.get("Points", player.get("Pontos", 0))
+            pontos = jogador.get("Points", jogador.get("Pontos", 0))
             if nome.lower() not in usuarios_unicos or pontos > usuarios_unicos[nome.lower()]["Pontos"]:
                 usuarios_unicos[nome.lower()] = {"Jogador": nome, "Pontos": pontos}
         
