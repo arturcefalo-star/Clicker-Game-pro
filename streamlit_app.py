@@ -12,33 +12,7 @@ st.set_page_config(page_title="Clicker Game Pro", layout="centered")
 
 # =====================================================================
 # ⚙️ EDITE AQUI OS NOMES E BÔNUS BASE DOS PETS DO MUNDO 2 (LOGOS 7, 8 E 9)
-# =====================================================================
-NOME_PET_7 = "Barbbie"  # Logo 7
-BONUS_PET_7 = 1000000
-
-NOME_PET_8 = "Homem A."     # Logo 8
-BONUS_PET_8 = 2500000
-
-NOME_PET_9 = "Tame do cossita"  # Logo 9
-BONUS_PET_9 = 5000000
-
-CUSTO_OVO_MUNDO_2_BARATO = 50000000   # Custo do primeiro ovo do Mundo 2
-
-NOME_PET_M2_R1 = "Pocoyo"
-BONUS_PET_M2_R1 = 10000000
-
-NOME_PET_M2_R2 = "Bob Construtor"
-BONUS_PET_M2_R2 = 25000000
-
-NOME_PET_M2_R3 = "Pintinho A."
-BONUS_PET_M2_R3 = 50000000
-
-CUSTO_OVO_MUNDO_2_CARO = 500000000   # Custo do segundo ovo do Mundo 2
-# =====================================================================
-
-SENHA_DEV = "--$3CR3T--"  
-SENHA_ADMIN = "XXxx67xxXX"
-SENHA_APOIADOR = "67AP0IO67"  
+# =====================================================================SENHA_APOIADOR = "67AP0IO67"  
 ACCOUNTS_FILE = "usuarios.json"
 LEADERBOARD_FILE = "leaderboard.json"
 AVISOS_FILE = "avisos.json"
