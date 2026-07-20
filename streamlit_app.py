@@ -7,6 +7,9 @@ import uuid
 from streamlit_autorefresh import st_autorefresh
 import streamlit.components.v1 as components
 
+# Configuração da página precisa ser a primeira linha Streamlit
+st.set_page_config(page_title="Clicker Game Pro", layout="centered")
+
 # =====================================================================
 # ⚙️ EDITE AQUI OS NOMES E BÔNUS BASE DOS PETS DO MUNDO 2 (LOGOS 7, 8 E 9)
 # =====================================================================
@@ -177,8 +180,7 @@ def resetar_estados_jogador_local():
     st.session_state.pontos_leaderboard_cache = 0
     atualizar_poder_clique()
 
-# --- COMPONENTE JAVASCRIPT DE ARMAZENAMENTO LOCAL ATUALIZADO ---
-
+# --- COMPONENTE JAVASCRIPT CORRIGIDO ---
 def injetar_js_localstorage():
     js_code = """
     <script>
@@ -188,8 +190,11 @@ def injetar_js_localstorage():
         let contas = localStorage.getItem("clicker_saved_accounts") || "{}";
         const streamlitInput = parentDoc.querySelector('input[aria-label="bridge_storage_input"]');
         if (streamlitInput && streamlitInput.value !== contas) {
-            streamlitInput.value = contas;
-            streamlitInput.dispatchEvent(new Event('input', { bubbles: true }));
+            // Só atualiza se o valor vindo do localStorage for válido para evitar inputs fantasmas
+            if (contas !== "{}") {
+                streamlitInput.value = contas;
+                streamlitInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
         }
     }
 
@@ -212,9 +217,9 @@ def injetar_js_localstorage():
         }
     });
 
-    // Sincroniza continuamente de forma agressiva para evitar perdas em abas novas
+    // Força execução rápida inicial e repetições curtas
+    setTimeout(sincronizar, 100);
     setInterval(sincronizar, 1000);
-    setTimeout(sincronizar, 300);
     </script>
     """
     components.html(js_code, height=0, width=0)
@@ -230,10 +235,28 @@ if "nome_usuario" not in st.session_state:
 bridge_data = st.text_input("bridge_storage_input", key="bridge_storage_input", label_visibility="collapsed")
 injetar_js_localstorage()
 
+# Restaura as contas locais do LocalStorage e injeta de volta para o Servidor se necessário
 try:
     contas_locais = json.loads(bridge_data) if bridge_data else {}
+    if contas_locais:
+        usuarios_server = carregar_todos_usuarios()
+        alterou = False
+        for k, v in contas_locais.items():
+            if k not in usuarios_server:
+                usuarios_server[k] = v["dados_completos"]
+                alterou = True
+        if alterou:
+            salvar_todos_usuarios(usuarios_server)
 except Exception:
     contas_locais = {}
+
+# Re-sincroniza o banco local do servidor com o que o jogador salvou no navegador
+todos_usuarios_server = carregar_todos_usuarios()
+for k, v in contas_locais.items():
+    if k not in todos_usuarios_server:
+        todos_usuarios_server[k] = v["dados_completos"]
+salvar_todos_usuarios(todos_usuarios_server)
+
 
 # =====================================================================
 # 🔐 TELA DE LOGIN / REGISTRO COM CAPTURA PERMANENTE DO NAVEGADOR
@@ -251,11 +274,6 @@ if not st.session_state.logado:
         if st.button("Entrar", use_container_width=True):
             usuarios = carregar_todos_usuarios()
             user_key = log_user.lower()
-            
-            # Se o servidor reiniciou mas a conta existe no navegador local, recuperamos ela de volta para o servidor!
-            if user_key not in usuarios and user_key in contas_locais:
-                usuarios[user_key] = contas_locais[user_key]["dados_completos"]
-                salvar_todos_usuarios(usuarios)
                 
             if user_key in usuarios and usuarios[user_key]["senha"] == log_pass:
                 dados = usuarios[user_key]["dados"]
@@ -275,10 +293,20 @@ if not st.session_state.logado:
                 st.session_state.nome_usuario = usuarios[user_key]["nome_exibicao"]
                 st.session_state.logado = True
                 
-                usuarios[user_key]["ultimo_login"] = time.strftime("%Y-%m-%d %H:%M:%S")
-                salvar_todos_usuarios(usuarios)
-                
                 st.session_state["tmp_logged_password"] = log_pass
+                
+                # Garante que ao logar com sucesso ela se auto-salve no LocalStorage local do navegador também
+                st.components.v1.html(f"""
+                <script>
+                window.parent.postMessage({{
+                    type: "SAVE_ACCOUNT", 
+                    user: "{usuarios[user_key]['nome_exibicao']}", 
+                    password: "{log_pass}",
+                    dados_completos: {json.dumps(usuarios[user_key])}
+                }}, "*");
+                </script>
+                """, height=0, width=0)
+                
                 st.success(f"Bem-vindo de volta, {st.session_state.nome_usuario}!")
                 time.sleep(0.5)
                 st.rerun()
@@ -354,7 +382,7 @@ if not st.session_state.logado:
             
             if not reg_user or not reg_pass:
                 st.warning("Preencha todos os campos!")
-            elif user_key in usuarios or user_key in contas_locais:
+            elif user_key in usuarios:
                 st.error("Este nome de usuário já existe!")
             elif reg_pass != reg_pass_conf:
                 st.error("As senhas não coincidem.")
@@ -386,14 +414,14 @@ if not st.session_state.logado:
                 </script>
                 """, height=0, width=0)
                 
-                st.success("Conta criada com sucesso e guardada no servidor! Vá em 'Contas Já Criadas 💾' ou faça o login.")
+                st.success("Conta criada com sucesso e guardada permanentemente!")
                 time.sleep(0.5)
                 st.rerun()
                 
     st.stop()
 
 # =====================================================================
-# 🎮 INTERFACE E LOGICA PRINCIPAL DO JOGO
+# 🎮 INTERFACE E LOGICA PRINCIPAL DO JOGO (SEGUE O RESTANTE DO SEU CÓDIGO)
 # =====================================================================
 
 if "poder_clique" not in st.session_state:
@@ -501,44 +529,23 @@ with st.sidebar:
     prefixo_exibicao = f"[{st.session_state.titulo}] " if st.session_state.titulo else ""
     st.write(f"Conectado como: **{prefixo_exibicao}{st.session_state.nome_usuario}**")
     
-    # 💾 ATUALIZADOR AUTOMÁTICO DE NAVEGADOR
-    if st.session_state.nome_usuario.lower() in contas_locais:
-        st.caption("✓ Conta memorizada no navegador.")
-        # Mantém os dados locais do navegador atualizados em tempo real com o progresso do servidor
-        if st.button("🔄 Forçar Backup no Navegador", use_container_width=True):
-            usuarios = carregar_todos_usuarios()
-            key_user = st.session_state.nome_usuario.lower()
-            if key_user in usuarios:
-                st.components.v1.html(f"""
-                <script>
-                window.parent.postMessage({{
-                    type: "SAVE_ACCOUNT", 
-                    user: "{st.session_state.nome_usuario}", 
-                    password: "{st.session_state.get('tmp_logged_password','')}",
-                    dados_completos: {json.dumps(usuarios[key_user])}
-                }}, "*");
-                </script>
-                """, height=0, width=0)
-                st.toast("Navegador atualizado com sucesso!")
-    else:
-        if st.button("💾 Lembrar Conta neste Navegador", type="primary", use_container_width=True):
-            senha_recuperada = st.session_state.get("tmp_logged_password")
-            usuarios = carregar_todos_usuarios()
-            key_user = st.session_state.nome_usuario.lower()
-            if senha_recuperada and key_user in usuarios:
-                st.components.v1.html(f"""
-                <script>
-                window.parent.postMessage({{
-                    type: "SAVE_ACCOUNT", 
-                    user: "{st.session_state.nome_usuario}", 
-                    password: "{senha_recuperada}",
-                    dados_completos: {json.dumps(usuarios[key_user])}
-                }}, "*");
-                </script>
-                """, height=0, width=0)
-                st.success("Salva com sucesso!")
-                time.sleep(0.5)
-                st.rerun()
+    st.caption("✓ Conta sincronizada no navegador.")
+    # Força salvamento manual se quiser garantir o backup imediato
+    if st.button("🔄 Forçar Redundância Manual", use_container_width=True):
+        usuarios = carregar_todos_usuarios()
+        key_user = st.session_state.nome_usuario.lower()
+        if key_user in usuarios:
+            st.components.v1.html(f"""
+            <script>
+            window.parent.postMessage({{
+                type: "SAVE_ACCOUNT", 
+                user: "{st.session_state.nome_usuario}", 
+                password: "{st.session_state.get('tmp_logged_password','')}",
+                dados_completos: {json.dumps(usuarios[key_user])}
+            }}, "*");
+            </script>
+            """, height=0, width=0)
+            st.toast("Backup local atualizado!")
 
     if st.button("Sair da Conta (Logout)", type="secondary", use_container_width=True):
         salvar_progresso_atual()
@@ -1201,7 +1208,7 @@ st.markdown("---")
 st.subheader("Atualizações:")
 st.write("(3.0.0) - Criação do Painel do DEV exclusivo e limitação do painel ADM")
 st.write("(3.0.2) - Correção da oscilação/piscar da tela gerada pelo loop anti-lag utilizando fragmentação invisível.")
-st.write("(3.2.1) - Sincronização Agressiva do Navegador: Proteção mútua contra reinícios inesperados de abas e instâncias de servidor.")
+st.write("(3.3.0) - Correção Definitiva do Sistema de Persistência no Navegador (LocalStorage Sync Fix).")
 
 # --- 🏆 TABELA DE CLASSIFICAÇÃO GLOBAL ---
 st.markdown("---")
