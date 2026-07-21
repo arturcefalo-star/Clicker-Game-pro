@@ -206,7 +206,7 @@ def resetar_estados_jogador_local():
     st.session_state.pontos_leaderboard_cache = 0
     atualizar_poder_clique()
 
-# --- COMPONENTE JAVASCRIPT ---
+# --- COMPONENTE JAVASCRIPT INTEGRADO AO BROWSER ---
 def injetar_js_localstorage():
     js_code = """
     <script>
@@ -458,12 +458,10 @@ user_key_atual = st.session_state.nome_usuario.lower()
 if user_key_atual in usuarios_verificacao and usuarios_verificacao[user_key_atual].get("banido", False):
     motivo_banimento = usuarios_verificacao[user_key_atual].get("motivo_ban", "Sem motivo especificado.")
     
-    # Exibe tela de bloqueio
     st.error("🚫 **SUA CONTA FOI SUSPENSA**")
     st.warning(f"Você foi banido por um administrador pelo seguinte motivo:\n\n> **{motivo_banimento}**")
     st.info("Caso acredite que isso foi um engano, entre em contato com a administração.")
     
-    # Atualiza a cada 1 segundo no navegador para checar se foi desbanido
     st_autorefresh(interval=1000, key="ban_check_timer")
     
     if st.button("Sair da Conta", type="secondary", use_container_width=True):
@@ -556,7 +554,6 @@ atualizar_poder_clique()
 def renderizar_area_clique():
     st_autorefresh(interval=1000, key="auto_click_timer")
     
-    # Checagem instantânea de banimento em cada segundo/ciclo
     chk_users = carregar_todos_usuarios()
     if st.session_state.nome_usuario.lower() in chk_users and chk_users[st.session_state.nome_usuario.lower()].get("banido", False):
         st.rerun()
@@ -653,50 +650,34 @@ with st.sidebar:
         qtd_alteracao = st.number_input("Valor da Alteração:", min_value=1, value=10000, step=1000, key="dev_val_attr")
         
         st.subheader("Gerenciamento Geral (Banco de Dados)")
-        placar_completo_dev = []
-        if os.path.exists(LEADERBOARD_FILE):
-            try:
-                with open(LEADERBOARD_FILE, "r", encoding="utf-8") as f:
-                    placar_completo_dev = json.load(f)
-            except Exception:
-                pass
+        
+        # Carregamento dinâmico e seguro do banco
+        usuarios_db_dev = carregar_todos_usuarios()
 
-        if placar_completo_dev:
-            usuarios_db_dev = carregar_todos_usuarios()
-            for i, jogador in enumerate(placar_completo_dev):
-                name_jogador = jogador["Jogador"]
-                key_jogador = name_jogador.lower()
-                
-                titulo_atual = ""
-                esta_banido = False
-                if key_jogador in usuarios_db_dev:
-                    titulo_atual = usuarios_db_dev[key_jogador]["dados"].get("titulo", "")
-                    esta_banido = usuarios_db_dev[key_jogador].get("banido", False)
+        if usuarios_db_dev:
+            for i, (key_jogador, dados_user) in enumerate(list(usuarios_db_dev.items())):
+                name_jogador = dados_user.get("nome_exibicao", key_jogador)
+                titulo_atual = dados_user.get("dados", {}).get("titulo", "")
+                esta_banido = dados_user.get("banido", False)
                 
                 prefixo_lista = f"[{titulo_atual}] " if titulo_atual else ""
                 status_ban_texto = " 🚫 (BANIDO)" if esta_banido else ""
                 st.write(f"**{prefixo_lista}{name_jogador}**{status_ban_texto}")
                 
-                col_dev_pts, col_dev_clk, col_dev_pps, col_dev_t, col_dev_ban = st.columns([1, 1, 1, 1.2, 0.8])
+                col_dev_pts, col_dev_clk, col_dev_pps, col_dev_t, col_dev_ban = st.columns([1, 1, 1, 1.2, 1])
                 
                 if col_dev_pts.button("Pontos", key=f"dev_pts_{key_jogador}_{i}"):
-                    if key_jogador in usuarios_db_dev:
-                        usuarios_db_dev[key_jogador]["dados"]["pontos"] = max(0, usuarios_db_dev[key_jogador]["dados"].get("pontos", 0) + qtd_alteracao)
-                        salvar_todos_usuarios(usuarios_db_dev)
+                    usuarios_db_dev[key_jogador]["dados"]["pontos"] = max(0, usuarios_db_dev[key_jogador]["dados"].get("pontos", 0) + qtd_alteracao)
+                    salvar_todos_usuarios(usuarios_db_dev)
                     if key_jogador == st.session_state.nome_usuario.lower():
                         st.session_state.pontos += qtd_alteracao
                         st.session_state.pontos_leaderboard_cache = st.session_state.pontos
-                    for j in placar_completo_dev:
-                        if j["Jogador"].lower() == key_jogador:
-                            j["Pontos"] = max(0, j.get("Pontos", 0) + qtd_alteracao)
-                            break
-                    salvar_leaderboard_completo(placar_completo_dev)
+                    atualizar_no_leaderboard(name_jogador, usuarios_db_dev[key_jogador]["dados"]["pontos"])
                     st.rerun()
                     
                 if col_dev_clk.button("Poder/C", key=f"dev_clk_{key_jogador}_{i}"):
-                    if key_jogador in usuarios_db_dev:
-                        usuarios_db_dev[key_jogador]["dados"]["poder_base"] = max(1, usuarios_db_dev[key_jogador]["dados"].get("poder_base", 1) + qtd_alteracao)
-                        salvar_todos_usuarios(usuarios_db_dev)
+                    usuarios_db_dev[key_jogador]["dados"]["poder_base"] = max(1, usuarios_db_dev[key_jogador]["dados"].get("poder_base", 1) + qtd_alteracao)
+                    salvar_todos_usuarios(usuarios_db_dev)
                     if key_jogador == st.session_state.nome_usuario.lower():
                         st.session_state.poder_base += qtd_alteracao
                         atualizar_poder_clique()
@@ -704,9 +685,8 @@ with st.sidebar:
                     st.rerun()
 
                 if col_dev_pps.button("Pontos/s", key=f"dev_pps_{key_jogador}_{i}"):
-                    if key_jogador in usuarios_db_dev:
-                        usuarios_db_dev[key_jogador]["dados"]["pontos_por_segundo"] = max(0, usuarios_db_dev[key_jogador]["dados"].get("pontos_por_segundo", 0) + qtd_alteracao)
-                        salvar_todos_usuarios(usuarios_db_dev)
+                    usuarios_db_dev[key_jogador]["dados"]["pontos_por_segundo"] = max(0, usuarios_db_dev[key_jogador]["dados"].get("pontos_por_segundo", 0) + qtd_alteracao)
+                    salvar_todos_usuarios(usuarios_db_dev)
                     if key_jogador == st.session_state.nome_usuario.lower():
                         st.session_state.pontos_por_segundo += qtd_alteracao
                     st.success("Pontos/Seg updated!")
@@ -720,35 +700,33 @@ with st.sidebar:
                         idx_atual = 0
                     opcao_titulo = st.selectbox("Escolha:", opcoes_titulos_dev, key=f"sel_dev_t_{key_jogador}_{i}", index=idx_atual)
                     if st.button("Aplicar", key=f"btn_dev_t_{key_jogador}_{i}", use_container_width=True):
-                        if key_jogador in usuarios_db_dev:
-                            novo_t = "" if opcao_titulo == "Nenhum" else opcao_titulo
-                            usuarios_db_dev[key_jogador]["dados"]["titulo"] = novo_t
-                            salvar_todos_usuarios(usuarios_db_dev)
-                            if key_jogador == st.session_state.nome_usuario.lower():
-                                st.session_state.titulo = novo_t
-                            st.success("Título Salvo!")
-                            time.sleep(0.3)
-                            st.rerun()
+                        novo_t = "" if opcao_titulo == "Nenhum" else opcao_titulo
+                        usuarios_db_dev[key_jogador]["dados"]["titulo"] = novo_t
+                        salvar_todos_usuarios(usuarios_db_dev)
+                        if key_jogador == st.session_state.nome_usuario.lower():
+                            st.session_state.titulo = novo_t
+                        st.success("Título Salvo!")
+                        time.sleep(0.3)
+                        st.rerun()
 
+                # CORREÇÃO DO BANIMENTO: Lógica refatorada para não desestruturar o painel
                 with col_dev_ban.popover("Desban" if esta_banido else "Ban", use_container_width=True):
                     if esta_banido:
-                        st.write("Clique abaixo para desbanir o jogador:")
+                        st.write("Clique abaixo para desbanir:")
                         if st.button("Confirmar Desban", key=f"unban_confirm_{key_jogador}_{i}", type="primary", use_container_width=True):
-                            if key_jogador in usuarios_db_dev:
-                                usuarios_db_dev[key_jogador]["banido"] = False
-                                usuarios_db_dev[key_jogador]["motivo_ban"] = ""
-                                salvar_todos_usuarios(usuarios_db_dev)
-                            st.toast(f"Jogador {name_jogador} foi desbanido!")
+                            usuarios_db_dev[key_jogador]["banido"] = False
+                            usuarios_db_dev[key_jogador]["motivo_ban"] = ""
+                            salvar_todos_usuarios(usuarios_db_dev)
+                            st.toast(f"{name_jogador} foi desbanido!")
                             time.sleep(0.3)
                             st.rerun()
                     else:
-                        motivo_input = st.text_input("Motivo do Banimento:", value="Nome de usuário incorreto ou restrito", key=f"motivo_ban_{key_jogador}_{i}")
-                        if st.button("Confirmar Banimento", key=f"ban_confirm_{key_jogador}_{i}", type="primary", use_container_width=True):
-                            if key_jogador in usuarios_db_dev:
-                                usuarios_db_dev[key_jogador]["banido"] = True
-                                usuarios_db_dev[key_jogador]["motivo_ban"] = motivo_input
-                                salvar_todos_usuarios(usuarios_db_dev)
-                            st.toast(f"Jogador {name_jogador} foi banido instantaneamente!")
+                        motivo_input = st.text_input("Motivo:", value="Nome de usuário incorreto", key=f"motivo_ban_{key_jogador}_{i}")
+                        if st.button("Confirmar Ban", key=f"ban_confirm_{key_jogador}_{i}", type="primary", use_container_width=True):
+                            usuarios_db_dev[key_jogador]["banido"] = True
+                            usuarios_db_dev[key_jogador]["motivo_ban"] = motivo_input
+                            salvar_todos_usuarios(usuarios_db_dev)
+                            st.toast(f"{name_jogador} foi banido!")
                             time.sleep(0.3)
                             st.rerun()
 
@@ -822,55 +800,35 @@ with st.sidebar:
         qtd_pontos = st.number_input("Quantidade de pontos para Add/Rem:", min_value=1, value=1000, step=100, key="admin_pt_val")
         
         st.subheader("Gerenciar Placar Global")
-        placar_completo = []
-        if os.path.exists(LEADERBOARD_FILE):
-            try:
-                with open(LEADERBOARD_FILE, "r", encoding="utf-8") as f:
-                    placar_completo = json.load(f)
-            except Exception:
-                pass
+        usuarios_db = carregar_todos_usuarios()
 
-        if placar_completo:
-            usuarios_db = carregar_todos_usuarios()
-            for i, player in enumerate(placar_completo):
-                name_jogador = player["Jogador"]
-                key_jogador = name_jogador.lower()
-                
-                titulo_atual = ""
-                if key_jogador in usuarios_db:
-                    titulo_atual = usuarios_db[key_jogador]["dados"].get("titulo", "")
+        if usuarios_db:
+            for i, (key_jogador, dados_user) in enumerate(list(usuarios_db.items())):
+                name_jogador = dados_user.get("nome_exibicao", key_jogador)
+                pontos_jogador = dados_user.get("dados", {}).get("pontos", 0)
+                titulo_atual = dados_user.get("dados", {}).get("titulo", "")
                 
                 prefixo_lista = f"[{titulo_atual}] " if titulo_atual else ""
                 
                 col_adm1, col_adm3, col_adm4 = st.columns([2, 1, 1])
-                col_adm1.write(f"**{prefixo_lista}{name_jogador}**: {player['Pontos']:,} pts")
+                col_adm1.write(f"**{prefixo_lista}{name_jogador}**: {pontos_jogador:,} pts")
                 
                 if col_adm3.button("Add", key=f"add_{key_jogador}_{i}"):
-                    if key_jogador in usuarios_db:
-                        usuarios_db[key_jogador]["dados"]["pontos"] = max(0, usuarios_db[key_jogador]["dados"].get("pontos", 0) + qtd_pontos)
-                        salvar_todos_usuarios(usuarios_db)
+                    usuarios_db[key_jogador]["dados"]["pontos"] = max(0, usuarios_db[key_jogador]["dados"].get("pontos", 0) + qtd_pontos)
+                    salvar_todos_usuarios(usuarios_db)
                     if key_jogador == st.session_state.nome_usuario.lower():
                         st.session_state.pontos += qtd_pontos
                         st.session_state.pontos_leaderboard_cache = st.session_state.pontos
-                    for j in placar_completo:
-                        if j["Jogador"].lower() == key_jogador:
-                            j["Pontos"] = max(0, j.get("Pontos", 0) + qtd_pontos)
-                            break
-                    salvar_leaderboard_completo(placar_completo)
+                    atualizar_no_leaderboard(name_jogador, usuarios_db[key_jogador]["dados"]["pontos"])
                     st.rerun()
 
                 if col_adm4.button("Rem", key=f"rem_{key_jogador}_{i}"):
-                    if key_jogador in usuarios_db:
-                        usuarios_db[key_jogador]["dados"]["pontos"] = max(0, usuarios_db[key_jogador]["dados"].get("pontos", 0) - qtd_pontos)
-                        salvar_todos_usuarios(usuarios_db)
+                    usuarios_db[key_jogador]["dados"]["pontos"] = max(0, usuarios_db[key_jogador]["dados"].get("pontos", 0) - qtd_pontos)
+                    salvar_todos_usuarios(usuarios_db)
                     if key_jogador == st.session_state.nome_usuario.lower():
                         st.session_state.pontos = max(0, st.session_state.pontos - qtd_pontos)
                         st.session_state.pontos_leaderboard_cache = st.session_state.pontos
-                    for j in placar_completo:
-                        if j["Jogador"].lower() == key_jogador:
-                            j["Pontos"] = max(0, j.get("Pontos", 0) - qtd_pontos)
-                            break
-                    salvar_leaderboard_completo(placar_completo)
+                    atualizar_no_leaderboard(name_jogador, usuarios_db[key_jogador]["dados"]["pontos"])
                     st.rerun()
 
         st.markdown("---")
