@@ -1,4 +1,4 @@
-jbhvimport streamlit as st
+import streamlit as st
 import time
 import random
 import json
@@ -83,6 +83,10 @@ def salvar_progresso_atual():
         usuarios = carregar_todos_usuarios()
         username_key = st.session_state.nome_usuario.lower()
         
+        # Trava de segurança: Se estiver banido, ignora a gravação de dados
+        if username_key in usuarios and usuarios[username_key].get("banido", False):
+            return
+            
         if username_key in usuarios:
             usuarios[username_key]["dados"] = {
                 "pontos": st.session_state.pontos,
@@ -193,7 +197,7 @@ def resetar_estados_jogador_local():
     st.session_state.pontos_leaderboard_cache = 0
     atualizar_poder_clique()
 
-# --- COMPONENTE JAVASCRIPT CORRIGIDO ---
+# --- COMPONENTE JAVASCRIPT ---
 def injetar_js_localstorage():
     js_code = """
     <script>
@@ -431,25 +435,27 @@ if not st.session_state.logado:
     st.stop()
 
 # =====================================================================
-# 🚫 VERIFICAÇÃO DE BANIMENTO DO JOGADOR LOGADO
+# 🚫 VERIFICAÇÃO DE BANIMENTO IMEDIATO DO JOGADOR LOGADO
 # =====================================================================
 usuarios_verificacao = carregar_todos_usuarios()
 user_key_atual = st.session_state.nome_usuario.lower()
 
 if user_key_atual in usuarios_verificacao and usuarios_verificacao[user_key_atual].get("banido", False):
     motivo_banimento = usuarios_verificacao[user_key_atual].get("motivo_ban", "Sem motivo especificado.")
-    st.error("🚫 **SUA CONTA FOI SUSPENSA**")
-    st.warning(f"Você foi banido por um admin pelo seguinte motivo:\n\n> **{motivo_banimento}**")
-    st.info("Caso acredite que isso foi um engano, entre em contato com a administração do servidor.")
     
-    # Atualiza a cada 2 segundos para verificar se foi desbanido
+    # Exibe tela de bloqueio
+    st.error("🚫 **SUA CONTA FOI SUSPENSA**")
+    st.warning(f"Você foi banido por um administrador pelo seguinte motivo:\n\n> **{motivo_banimento}**")
+    st.info("Caso acredite que isso foi um engano, entre em contato com a administração.")
+    
+    # Atualiza a cada 2 segundos no navegador para checar se foi desbanido
     st_autorefresh(interval=2000, key="ban_check_timer")
     
     if st.button("Sair da Conta", type="secondary", use_container_width=True):
         resetar_estados_jogador_local()
         st.rerun()
         
-    st.stop()
+    st.stop()  # Aborta a execução do resto do script instantaneamente
 
 # =====================================================================
 # 🎮 INTERFACE E LÓGICA PRINCIPAL DO JOGO
@@ -530,10 +536,9 @@ def calcular_chances_ovo(c1, c2, c3_base):
 
 atualizar_poder_clique()
 
-# --- SISTEMA DE CLIQUE E AUTO-CLICKER (REESTRUTURADO) ---
+# --- SISTEMA DE CLIQUE E AUTO-CLICKER ---
 @st.fragment
 def renderizar_area_clique():
-    # Atualizador automático de 1 segundo (Soma o Auto-click em tempo real)
     st_autorefresh(interval=1000, key="auto_click_timer")
     
     agora = time.time()
@@ -1252,7 +1257,7 @@ if st.session_state.nome_usuario:
 # --- LOG DE ATUALIZAÇÕES ---
 st.markdown("---")
 st.subheader("Atualizações:")
-st.write("(3.5.0) - Adicionada a função de Banimento e Desbanimento com motivo personalizado!")
+st.write("(3.5.0) - Adicionada a função de Banimento e Desbanimento instantâneo!")
 
 # --- 🏆 TABELA DE CLASSIFICAÇÃO GLOBAL ---
 st.markdown("---")
