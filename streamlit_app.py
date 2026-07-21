@@ -709,8 +709,11 @@ with st.sidebar:
                         time.sleep(0.3)
                         st.rerun()
 
-                # CORREÇÃO DO BANIMENTO: Lógica refatorada para não desestruturar o painel
-                with col_dev_ban.popover("Desban" if esta_banido else "Ban", use_container_width=True):
+                # --- CORREÇÃO DEFINITIVA DO CICLO BAN/DESBAN ---
+                popover_label = "Desban" if esta_banido else "Ban"
+                popover_key = f"popover_ban_{key_jogador}_{esta_banido}"
+                
+                with col_dev_ban.popover(popover_label, use_container_width=True, key=popover_key):
                     if esta_banido:
                         st.write("Clique abaixo para desbanir:")
                         if st.button("Confirmar Desban", key=f"unban_confirm_{key_jogador}_{i}", type="primary", use_container_width=True):
@@ -718,16 +721,16 @@ with st.sidebar:
                             usuarios_db_dev[key_jogador]["motivo_ban"] = ""
                             salvar_todos_usuarios(usuarios_db_dev)
                             st.toast(f"{name_jogador} foi desbanido!")
-                            time.sleep(0.3)
+                            time.sleep(0.2)
                             st.rerun()
                     else:
-                        motivo_input = st.text_input("Motivo:", value="Nome de usuário incorreto", key=f"motivo_ban_{key_jogador}_{i}")
+                        motivo_input = st.text_input("Motivo:", value="Uso de hacks/bugs", key=f"motivo_ban_{key_jogador}_{i}")
                         if st.button("Confirmar Ban", key=f"ban_confirm_{key_jogador}_{i}", type="primary", use_container_width=True):
                             usuarios_db_dev[key_jogador]["banido"] = True
                             usuarios_db_dev[key_jogador]["motivo_ban"] = motivo_input
                             salvar_todos_usuarios(usuarios_db_dev)
                             st.toast(f"{name_jogador} foi banido!")
-                            time.sleep(0.3)
+                            time.sleep(0.2)
                             st.rerun()
 
                 st.markdown("---")
