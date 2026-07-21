@@ -10,6 +10,15 @@ import streamlit.components.v1 as components
 # Configuração da página precisa ser a primeira linha Streamlit
 st.set_page_config(page_title="Clicker Game", layout="centered")
 
+# Oculta elementos visuais indesejados da bridge via CSS
+st.markdown("""
+    <style>
+    div[data-testid="stTextInput"]:has(input[aria-label="bridge_storage_input"]) {
+        display: none !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # =====================================================================
 # ⚙️ EDITE AQUI OS NOMES E BÔNUS BASE DOS PETS DO MUNDO 2 (LOGOS 7, 8 E 9)
 # =====================================================================
@@ -288,40 +297,43 @@ if not st.session_state.logado:
             user_key = log_user.lower()
                 
             if user_key in usuarios and usuarios[user_key]["senha"] == log_pass:
-                dados = usuarios[user_key]["dados"]
-                st.session_state.pontos = dados.get("pontos", 0)
-                st.session_state.poder_base = dados.get("poder_base", 1)
-                st.session_state.pontos_por_segundo = dados.get("pontos_por_segundo", 0)
-                st.session_state.pet_slot_1 = dados.get("pet_slot_1", None)
-                st.session_state.pet_slot_2 = dados.get("pet_slot_2", None)
-                st.session_state.pet_slot_m2_1 = dados.get("pet_slot_m2_1", None)
-                st.session_state.pet_slot_m2_2 = dados.get("pet_slot_m2_2", None)
-                st.session_state.totem_equipado = dados.get("totem_equipado", None)
-                st.session_state.ultimo_tick = dados.get("ultimo_tick", time.time())
-                st.session_state.mundo_2_desbloqueado = dados.get("mundo_2_desbloqueado", False)
-                st.session_state.mundo_atual = dados.get("mundo_atual", 1)
-                st.session_state.titulo = dados.get("titulo", "")
-                st.session_state.pontos_leaderboard_cache = dados.get("pontos", 0)
-                
-                st.session_state.nome_usuario = usuarios[user_key]["nome_exibicao"]
-                st.session_state.logado = True
-                
-                st.session_state["tmp_logged_password"] = log_pass
-                
-                st.components.v1.html(f"""
-                <script>
-                window.parent.postMessage({{
-                    type: "SAVE_ACCOUNT", 
-                    user: "{usuarios[user_key]['nome_exibicao']}", 
-                    password: "{log_pass}",
-                    dados_completos: {json.dumps(usuarios[user_key])}
-                }}, "*");
-                </script>
-                """, height=0, width=0)
-                
-                st.success(f"Bem-vindo de volta, {st.session_state.nome_usuario}!")
-                time.sleep(0.5)
-                st.rerun()
+                if usuarios[user_key].get("banido", False):
+                    st.error(f"Esta conta está suspensa. Motivo: {usuarios[user_key].get('motivo_ban', 'Não informado')}")
+                else:
+                    dados = usuarios[user_key]["dados"]
+                    st.session_state.pontos = dados.get("pontos", 0)
+                    st.session_state.poder_base = dados.get("poder_base", 1)
+                    st.session_state.pontos_por_segundo = dados.get("pontos_por_segundo", 0)
+                    st.session_state.pet_slot_1 = dados.get("pet_slot_1", None)
+                    st.session_state.pet_slot_2 = dados.get("pet_slot_2", None)
+                    st.session_state.pet_slot_m2_1 = dados.get("pet_slot_m2_1", None)
+                    st.session_state.pet_slot_m2_2 = dados.get("pet_slot_m2_2", None)
+                    st.session_state.totem_equipado = dados.get("totem_equipado", None)
+                    st.session_state.ultimo_tick = dados.get("ultimo_tick", time.time())
+                    st.session_state.mundo_2_desbloqueado = dados.get("mundo_2_desbloqueado", False)
+                    st.session_state.mundo_atual = dados.get("mundo_atual", 1)
+                    st.session_state.titulo = dados.get("titulo", "")
+                    st.session_state.pontos_leaderboard_cache = dados.get("pontos", 0)
+                    
+                    st.session_state.nome_usuario = usuarios[user_key]["nome_exibicao"]
+                    st.session_state.logado = True
+                    
+                    st.session_state["tmp_logged_password"] = log_pass
+                    
+                    st.components.v1.html(f"""
+                    <script>
+                    window.parent.postMessage({{
+                        type: "SAVE_ACCOUNT", 
+                        user: "{usuarios[user_key]['nome_exibicao']}", 
+                        password: "{log_pass}",
+                        dados_completos: {json.dumps(usuarios[user_key])}
+                    }}, "*");
+                    </script>
+                    """, height=0, width=0)
+                    
+                    st.success(f"Bem-vindo de volta, {st.session_state.nome_usuario}!")
+                    time.sleep(0.5)
+                    st.rerun()
             else:
                 st.error("Usuário ou senha incorretos.")
 
@@ -344,31 +356,34 @@ if not st.session_state.logado:
                 senha_salva = todos_usuarios_server[key_selecionada]["senha"]
                 
                 if senha_confirmacao == senha_salva:
-                    dados = todos_usuarios_server[key_selecionada]["dados"]
-                    st.session_state.pontos = dados.get("pontos", 0)
-                    st.session_state.poder_base = dados.get("poder_base", 1)
-                    st.session_state.pontos_por_segundo = dados.get("pontos_por_segundo", 0)
-                    st.session_state.pet_slot_1 = dados.get("pet_slot_1", None)
-                    st.session_state.pet_slot_2 = dados.get("pet_slot_2", None)
-                    st.session_state.pet_slot_m2_1 = dados.get("pet_slot_m2_1", None)
-                    st.session_state.pet_slot_m2_2 = dados.get("pet_slot_m2_2", None)
-                    st.session_state.totem_equipado = dados.get("totem_equipado", None)
-                    st.session_state.ultimo_tick = dados.get("ultimo_tick", time.time())
-                    st.session_state.mundo_2_desbloqueado = dados.get("mundo_2_desbloqueado", False)
-                    st.session_state.mundo_atual = dados.get("mundo_atual", 1)
-                    st.session_state.titulo = dados.get("titulo", "")
-                    st.session_state.pontos_leaderboard_cache = dados.get("pontos", 0)
-                    
-                    st.session_state.nome_usuario = todos_usuarios_server[key_selecionada]["nome_exibicao"]
-                    st.session_state.logado = True
-                    st.session_state["tmp_logged_password"] = senha_salva
-                    
-                    todos_usuarios_server[key_selecionada]["ultimo_login"] = time.strftime("%Y-%m-%d %H:%M:%S")
-                    salvar_todos_usuarios(todos_usuarios_server)
-                    
-                    st.success(f"Olá, {st.session_state.nome_usuario}!")
-                    time.sleep(0.5)
-                    st.rerun()
+                    if todos_usuarios_server[key_selecionada].get("banido", False):
+                        st.error(f"Esta conta está suspensa. Motivo: {todos_usuarios_server[key_selecionada].get('motivo_ban', 'Não informado')}")
+                    else:
+                        dados = todos_usuarios_server[key_selecionada]["dados"]
+                        st.session_state.pontos = dados.get("pontos", 0)
+                        st.session_state.poder_base = dados.get("poder_base", 1)
+                        st.session_state.pontos_por_segundo = dados.get("pontos_por_segundo", 0)
+                        st.session_state.pet_slot_1 = dados.get("pet_slot_1", None)
+                        st.session_state.pet_slot_2 = dados.get("pet_slot_2", None)
+                        st.session_state.pet_slot_m2_1 = dados.get("pet_slot_m2_1", None)
+                        st.session_state.pet_slot_m2_2 = dados.get("pet_slot_m2_2", None)
+                        st.session_state.totem_equipado = dados.get("totem_equipado", None)
+                        st.session_state.ultimo_tick = dados.get("ultimo_tick", time.time())
+                        st.session_state.mundo_2_desbloqueado = dados.get("mundo_2_desbloqueado", False)
+                        st.session_state.mundo_atual = dados.get("mundo_atual", 1)
+                        st.session_state.titulo = dados.get("titulo", "")
+                        st.session_state.pontos_leaderboard_cache = dados.get("pontos", 0)
+                        
+                        st.session_state.nome_usuario = todos_usuarios_server[key_selecionada]["nome_exibicao"]
+                        st.session_state.logado = True
+                        st.session_state["tmp_logged_password"] = senha_salva
+                        
+                        todos_usuarios_server[key_selecionada]["ultimo_login"] = time.strftime("%Y-%m-%d %H:%M:%S")
+                        salvar_todos_usuarios(todos_usuarios_server)
+                        
+                        st.success(f"Olá, {st.session_state.nome_usuario}!")
+                        time.sleep(0.5)
+                        st.rerun()
                 else:
                     st.error("Senha incorreta para a conta selecionada!")
                     
@@ -448,8 +463,8 @@ if user_key_atual in usuarios_verificacao and usuarios_verificacao[user_key_atua
     st.warning(f"Você foi banido por um administrador pelo seguinte motivo:\n\n> **{motivo_banimento}**")
     st.info("Caso acredite que isso foi um engano, entre em contato com a administração.")
     
-    # Atualiza a cada 2 segundos no navegador para checar se foi desbanido
-    st_autorefresh(interval=2000, key="ban_check_timer")
+    # Atualiza a cada 1 segundo no navegador para checar se foi desbanido
+    st_autorefresh(interval=1000, key="ban_check_timer")
     
     if st.button("Sair da Conta", type="secondary", use_container_width=True):
         resetar_estados_jogador_local()
@@ -541,6 +556,11 @@ atualizar_poder_clique()
 def renderizar_area_clique():
     st_autorefresh(interval=1000, key="auto_click_timer")
     
+    # Checagem instantânea de banimento em cada segundo/ciclo
+    chk_users = carregar_todos_usuarios()
+    if st.session_state.nome_usuario.lower() in chk_users and chk_users[st.session_state.nome_usuario.lower()].get("banido", False):
+        st.rerun()
+
     agora = time.time()
     tempo_passado = agora - st.session_state.ultimo_tick
     if tempo_passado >= 1.0:
@@ -728,7 +748,7 @@ with st.sidebar:
                                 usuarios_db_dev[key_jogador]["banido"] = True
                                 usuarios_db_dev[key_jogador]["motivo_ban"] = motivo_input
                                 salvar_todos_usuarios(usuarios_db_dev)
-                            st.toast(f"Jogador {name_jogador} foi banido!")
+                            st.toast(f"Jogador {name_jogador} foi banido instantaneamente!")
                             time.sleep(0.3)
                             st.rerun()
 
