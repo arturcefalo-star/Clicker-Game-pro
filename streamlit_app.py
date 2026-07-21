@@ -400,6 +400,8 @@ if not st.session_state.logado:
                     "senha": reg_pass,
                     "nome_exibicao": reg_user,
                     "ultimo_login": time.strftime("%Y-%m-%d %H:%M:%S"),
+                    "banido": False,
+                    "motivo_ban": "",
                     "dados": {
                         "pontos": 0, "poder_base": 1, "pontos_por_segundo": 0,
                         "pet_slot_1": None, "pet_slot_2": None,
@@ -426,6 +428,27 @@ if not st.session_state.logado:
                 time.sleep(0.5)
                 st.rerun()
                 
+    st.stop()
+
+# =====================================================================
+# 🚫 VERIFICAÇÃO DE BANIMENTO DO JOGADOR LOGADO
+# =====================================================================
+usuarios_verificacao = carregar_todos_usuarios()
+user_key_atual = st.session_state.nome_usuario.lower()
+
+if user_key_atual in usuarios_verificacao and usuarios_verificacao[user_key_atual].get("banido", False):
+    motivo_banimento = usuarios_verificacao[user_key_atual].get("motivo_ban", "Sem motivo especificado.")
+    st.error("🚫 **SUA CONTA FOI SUSPENSA**")
+    st.warning(f"Você foi banido por um admin pelo seguinte motivo:\n\n> **{motivo_banimento}**")
+    st.info("Caso acredite que isso foi um engano, entre em contato com a administração do servidor.")
+    
+    # Atualiza a cada 2 segundos para verificar se foi desbanido
+    st_autorefresh(interval=2000, key="ban_check_timer")
+    
+    if st.button("Sair da Conta", type="secondary", use_container_width=True):
+        resetar_estados_jogador_local()
+        st.rerun()
+        
     st.stop()
 
 # =====================================================================
@@ -620,11 +643,14 @@ with st.sidebar:
                 key_jogador = name_jogador.lower()
                 
                 titulo_atual = ""
+                esta_banido = False
                 if key_jogador in usuarios_db_dev:
                     titulo_atual = usuarios_db_dev[key_jogador]["dados"].get("titulo", "")
+                    esta_banido = usuarios_db_dev[key_jogador].get("banido", False)
                 
                 prefixo_lista = f"[{titulo_atual}] " if titulo_atual else ""
-                st.write(f"**{prefixo_lista}{name_jogador}**")
+                status_ban_texto = " 🚫 (BANIDO)" if esta_banido else ""
+                st.write(f"**{prefixo_lista}{name_jogador}**{status_ban_texto}")
                 
                 col_dev_pts, col_dev_clk, col_dev_pps, col_dev_t, col_dev_ban = st.columns([1, 1, 1, 1.2, 0.8])
                 
@@ -679,15 +705,28 @@ with st.sidebar:
                             time.sleep(0.3)
                             st.rerun()
 
-                if col_dev_ban.button("Ban", key=f"dev_ban_{key_jogador}_{i}"):
-                    if key_jogador in usuarios_db_dev:
-                        del usuarios_db_dev[key_jogador]
-                        salvar_todos_usuarios(usuarios_db_dev)
-                    placar_completo_dev = [j for j in placar_completo_dev if j["Jogador"].lower() != key_jogador]
-                    salvar_leaderboard_completo(placar_completo_dev)
-                    if key_jogador == st.session_state.nome_usuario.lower():
-                        resetar_estados_jogador_local()
-                    st.rerun()
+                with col_dev_ban.popover("Desban" if esta_banido else "Ban", use_container_width=True):
+                    if esta_banido:
+                        st.write("Clique abaixo para desbanir o jogador:")
+                        if st.button("Confirmar Desban", key=f"unban_confirm_{key_jogador}_{i}", type="primary", use_container_width=True):
+                            if key_jogador in usuarios_db_dev:
+                                usuarios_db_dev[key_jogador]["banido"] = False
+                                usuarios_db_dev[key_jogador]["motivo_ban"] = ""
+                                salvar_todos_usuarios(usuarios_db_dev)
+                            st.toast(f"Jogador {name_jogador} foi desbanido!")
+                            time.sleep(0.3)
+                            st.rerun()
+                    else:
+                        motivo_input = st.text_input("Motivo do Banimento:", value="Nome de usuário incorreto ou restrito", key=f"motivo_ban_{key_jogador}_{i}")
+                        if st.button("Confirmar Banimento", key=f"ban_confirm_{key_jogador}_{i}", type="primary", use_container_width=True):
+                            if key_jogador in usuarios_db_dev:
+                                usuarios_db_dev[key_jogador]["banido"] = True
+                                usuarios_db_dev[key_jogador]["motivo_ban"] = motivo_input
+                                salvar_todos_usuarios(usuarios_db_dev)
+                            st.toast(f"Jogador {name_jogador} foi banido!")
+                            time.sleep(0.3)
+                            st.rerun()
+
                 st.markdown("---")
 
         st.subheader("Inspecionar Jogador")
@@ -1213,7 +1252,7 @@ if st.session_state.nome_usuario:
 # --- LOG DE ATUALIZAÇÕES ---
 st.markdown("---")
 st.subheader("Atualizações:")
-st.write("(3.4.1) - Correção do Auto-Clicker em tempo real com sincronização a cada 1 segundo.")
+st.write("(3.5.0) - Adicionada a função de Banimento e Desbanimento com motivo personalizado!")
 
 # --- 🏆 TABELA DE CLASSIFICAÇÃO GLOBAL ---
 st.markdown("---")
