@@ -52,12 +52,12 @@ ACCOUNTS_FILE = "usuarios.json"
 LEADERBOARD_FILE = "leaderboard.json"
 AVISOS_FILE = "avisos.json"
 
-# --- CONFIGURAÇÃO DO POOL DE TOTENS ---
+# --- CONFIGURAÇÃO DO POOL DE TOTENS (CORRIGIDO) ---
 TOTENS_DISPONIVEIS = [
     {"nome": "Totem de Madeira", "raridade": "Comum", "multiplicador": 1.2, "custo": 500, "chance": 40},
     {"nome": "Totem de Pedra", "raridade": "Comum", "multiplicador": 1.5, "custo": 2500, "chance": 25},
     {"nome": "Totem de Ferro", "raridade": "Raro", "multiplicador": 2.0, "custo": 15000, "chance": 15},
-    {"nome": "Totem de Ouro", "raridade": "Raro", "multiplicador": 77000, "custo": 75000, "chance": 10},
+    {"nome": "Totem de Ouro", "raridade": "Raro", "multiplicador": 3.5, "custo": 75000, "chance": 10},
     {"nome": "Totem de Diamante", "raridade": "Épico", "multiplicador": 5.0, "custo": 500000, "chance": 6},
     {"nome": "Totem de Obsidiana", "raridade": "Lendário", "multiplicador": 7.5, "custo": 5000000, "chance": 3},
     {"nome": "Totem Mítico do Olimpo", "raridade": "Mítico", "multiplicador": 10.0, "custo": 50000000, "chance": 1}
@@ -92,7 +92,6 @@ def salvar_progresso_atual():
         usuarios = carregar_todos_usuarios()
         username_key = st.session_state.nome_usuario.lower()
         
-        # Trava de segurança: Se estiver banido, ignora a gravação de dados
         if username_key in usuarios and usuarios[username_key].get("banido", False):
             return
             
@@ -468,7 +467,7 @@ if user_key_atual in usuarios_verificacao and usuarios_verificacao[user_key_atua
         resetar_estados_jogador_local()
         st.rerun()
         
-    st.stop()  # Aborta a execução do resto do script instantaneamente
+    st.stop()
 
 # =====================================================================
 # 🎮 INTERFACE E LÓGICA PRINCIPAL DO JOGO
@@ -538,9 +537,14 @@ def atualizar_poder_clique():
         
     st.session_state.poder_clique = poder_calculado * mult_evento
 
+# --- CÁLCULO DE CHANCES DE OVO COM SORTE MODIFICADA ---
 def calcular_chances_ovo(c1, c2, c3_base):
-    c3_atual = min(c3_base * mult_sorte, 90)
-    restante = 100 - c3_atual
+    if c3_base <= 15:
+        c3_atual = min(c3_base * mult_sorte, 90)
+    else:
+        c3_atual = c3_base
+        
+    restante = 100.0 - c3_atual
     soma_base_comuns = c1 + c2
     
     c1_atual = (c1 / soma_base_comuns) * restante
@@ -570,7 +574,7 @@ def renderizar_area_clique():
     st.metric(label="Pontos Atuais", value=f"{st.session_state.pontos:,}")
     
     if st.session_state.totem_equipado:
-        st.write(f"🌟 **Totem Ativo:** {st.session_state.totem_equipado['nome']} ({st.session_state.totem_equipado['multiplicador']}x Crítico)")
+        st.write(f"🌟 **Totem Ativo:** {st.session_state.totem_equipado['nome']} ({st.session_state.totem_equipado['multiplicador']}x Bônus)")
     
     if st.session_state.mundo_atual == 2:
         if st.button("            Click Here          ", key="click_m2_btn", use_container_width=True):
@@ -600,8 +604,6 @@ if st.session_state.nome_usuario != "" and os.path.exists(LEADERBOARD_FILE):
                 break
     except Exception:
         pass
-
-loja_em_cooldown = (time.time() - st.session_state.ultima_compra) < 0.6
 
 # --- BARRA LATERAL ---
 with st.sidebar:
@@ -651,7 +653,6 @@ with st.sidebar:
         
         st.subheader("Gerenciamento Geral (Banco de Dados)")
         
-        # Carregamento dinâmico e seguro do banco
         usuarios_db_dev = carregar_todos_usuarios()
 
         if usuarios_db_dev:
@@ -709,7 +710,6 @@ with st.sidebar:
                         time.sleep(0.3)
                         st.rerun()
 
-                # --- CORREÇÃO DEFINITIVA DO CICLO BAN/DESBAN ---
                 popover_label = "Desban" if esta_banido else "Ban"
                 popover_key = f"popover_ban_{key_jogador}_{esta_banido}"
                 
@@ -875,8 +875,32 @@ with st.sidebar:
             salvar_configuracoes_globais(config_globais)
             st.rerun()
         
-        if st.button("Desativar", type="secondary", use_container_width=True, disabled=(mult_evento == 1), key="btn_desativar_evento"):
+        if st.button("Desativar Dinheiro", type="secondary", use_container_width=True, disabled=(mult_evento == 1), key="btn_desativar_evento"):
             config_globais["multiplicador_evento"] = 1
+            salvar_configuracoes_globais(config_globais)
+            st.rerun()
+
+        st.markdown("---")
+        st.subheader("Eventos de Sorte de Pets (<=15%)")
+        status_sorte = f"ATIVADO ({mult_sorte}X)" if mult_sorte > 1 else "DESATIVADO"
+        st.write(f"Multiplicador de Sorte Rara: **{status_sorte}**")
+        
+        col_s2x, col_s3x, col_s5x = st.columns(3)
+        if col_s2x.button("Sorte 2X", key="btn_sorte2", use_container_width=True, disabled=(mult_sorte == 2)):
+            config_globais["multiplicador_sorte"] = 2
+            salvar_configuracoes_globais(config_globais)
+            st.rerun()
+        if col_s3x.button("Sorte 3X", key="btn_sorte3", use_container_width=True, disabled=(mult_sorte == 3)):
+            config_globais["multiplicador_sorte"] = 3
+            salvar_configuracoes_globais(config_globais)
+            st.rerun()
+        if col_s5x.button("Sorte 5X", key="btn_sorte5", use_container_width=True, disabled=(mult_sorte == 5)):
+            config_globais["multiplicador_sorte"] = 5
+            salvar_configuracoes_globais(config_globais)
+            st.rerun()
+
+        if st.button("Desativar Sorte", type="secondary", use_container_width=True, disabled=(mult_sorte == 1), key="btn_desativar_sorte"):
+            config_globais["multiplicador_sorte"] = 1
             salvar_configuracoes_globais(config_globais)
             st.rerun()
 
@@ -939,7 +963,7 @@ if mult_evento > 1:
     st.warning(f" **EVENTO GLOBAL ATIVO:** Cliques concedendo **{mult_evento}X** de Pontos!")
 
 if mult_sorte > 1:
-    st.success(f" **EVENTO DE SORTE ATIVO:** Chances de Pets Raros **{mult_sorte}X**!")
+    st.success(f" 🍀 **EVENTO DE SORTE ATIVO:** Pets Raros (<=15%) com **{mult_sorte}X** mais chance!")
 
 CUSTO_MUNDO_2 = 10000000
 
@@ -988,9 +1012,9 @@ if st.session_state.mundo_atual == 2:
         st.write("### Ovo Épico:")
         st.write(f"{NOME_PET_7}: {ch1_m2_o1:.1f}% (+{BONUS_PET_7:,} Pts)")
         st.write(f"{NOME_PET_8}: {ch2_m2_o1:.1f}% (+{BONUS_PET_8:,} Pts)")
-        st.write(f"{NOME_PET_9}: **{ch3_m2_o1:.1f}%** (+{BONUS_PET_9:,} Pts)")
+        st.write(f"{NOME_PET_9}: **{ch3_m2_o1:.1f}%** (+{BONUS_PET_9:,} Pts) 🍀")
         
-        desativar_m2_ovo1 = st.session_state.pontos < CUSTO_OVO_MUNDO_2_BARATO or loja_em_cooldown
+        desativar_m2_ovo1 = st.session_state.pontos < CUSTO_OVO_MUNDO_2_BARATO
         if st.button(f"Abrir Ovo = {CUSTO_OVO_MUNDO_2_BARATO:,} Pontos", disabled=desativar_m2_ovo1, key="botao_m2_ovo1"):
             if st.session_state.pontos >= CUSTO_OVO_MUNDO_2_BARATO:
                 st.session_state.pontos -= CUSTO_OVO_MUNDO_2_BARATO
@@ -1020,9 +1044,9 @@ if st.session_state.mundo_atual == 2:
         st.write("### Ovo Lendário:")
         st.write(f"{NOME_PET_M2_R1}: {ch1_m2_o2:.1f}% (+{BONUS_PET_M2_R1:,} Pts)")
         st.write(f"{NOME_PET_M2_R2}: {ch2_m2_o2:.1f}% (+{BONUS_PET_M2_R2:,} Pts)")
-        st.write(f"{NOME_PET_M2_R3}: **{ch3_m2_o2:.1f}%** (+{BONUS_PET_M2_R3:,} Pts)")
+        st.write(f"{NOME_PET_M2_R3}: **{ch3_m2_o2:.1f}%** (+{BONUS_PET_M2_R3:,} Pts) 🍀")
         
-        desativar_m2_ovo2 = st.session_state.pontos < CUSTO_OVO_MUNDO_2_CARO or loja_em_cooldown
+        desativar_m2_ovo2 = st.session_state.pontos < CUSTO_OVO_MUNDO_2_CARO
         if st.button(f"Abrir Ovo = {CUSTO_OVO_MUNDO_2_CARO:,} Pontos", disabled=desativar_m2_ovo2, key="botao_m2_ovo2"):
             if st.session_state.pontos >= CUSTO_OVO_MUNDO_2_CARO:
                 st.session_state.pontos -= CUSTO_OVO_MUNDO_2_CARO
@@ -1064,10 +1088,10 @@ else:
         st.write("### Ovo Comum:")
         st.write(f"Siruriru: {ch1_m1_o1:.1f}% (+1 Ponto)")
         st.write(f"Peppa Pig: {ch2_m1_o1:.1f}% (+5 Pontos)")
-        st.write(f"Manoel G: **{ch3_m1_o1:.1f}%** (+10 Pontos)")
+        st.write(f"Manoel G: **{ch3_m1_o1:.1f}%** (+10 Pontos) 🍀")
         
         custo_ovo1 = 100
-        desativar_ovo1 = st.session_state.pontos < custo_ovo1 or loja_em_cooldown
+        desativar_ovo1 = st.session_state.pontos < custo_ovo1
         if st.button(f"Abrir Ovo = {custo_ovo1} Pontos", disabled=desativar_ovo1, key="botao_ovo1"):
             if st.session_state.pontos >= custo_ovo1:
                 st.session_state.pontos -= custo_ovo1
@@ -1100,7 +1124,7 @@ else:
         st.write(f"Michael J.: **{ch3_m1_o2:.1f}%** (+100 Pontos) 🍀")
         
         custo_ovo2 = 1000
-        desativar_ovo2 = st.session_state.pontos < custo_ovo2 or loja_em_cooldown
+        desativar_ovo2 = st.session_state.pontos < custo_ovo2
         if st.button(f"Abrir Ovo = {custo_ovo2} Pontos", disabled=desativar_ovo2, key="botao_ovo2"):
             if st.session_state.pontos >= custo_ovo2:
                 st.session_state.pontos -= custo_ovo2
@@ -1147,13 +1171,12 @@ if st.session_state.exibir_loja_totens:
         with colunas_totens[idx]:
             st.markdown(f"##### {totem['nome']}")
             st.write(f"⭐ **Raridade:** {totem['raridade']}")
-            st.write(f"⚔️ **Bônus:** {totem['multiplicador']}x Crítico")
+            st.write(f"⚔️ **Bônus:** {totem['multiplicador']}x Bônus")
             st.write(f"💰 **Custo:** {totem['custo']:,} Pts")
             
-            btn_desativado = st.session_state.pontos < totem['custo'] or loja_em_cooldown
+            btn_desativado = st.session_state.pontos < totem['custo']
             if st.button(f"Comprar Totem", key=f"btn_buy_totem_{idx}", disabled=btn_desativado, use_container_width=True):
                 if st.session_state.pontos >= totem['custo']:
-                    st.session_state.ultima_compra = time.time()
                     st.session_state.pontos -= totem['custo']
                     st.session_state.totem_equipado = totem
                     atualizar_poder_clique()
@@ -1204,12 +1227,11 @@ with col1:
     with st.container(height=350):
         for i, item in enumerate(melhorias_clique):
             texto = f"+{item['qtd']:,} clk | {item['custo']:,} Pts"
-            desativado = st.session_state.pontos < item['custo'] or loja_em_cooldown
+            desativado = st.session_state.pontos < item['custo']
             key_btn = f"c_{st.session_state.mundo_atual}_{i}"
 
             if st.button(texto, key=key_btn, disabled=desativado, use_container_width=True):
                 if st.session_state.pontos >= item['custo']:
-                    st.session_state.ultima_compra = time.time()
                     st.session_state.pontos -= item['custo']
                     st.session_state.poder_base += item['qtd']
                     atualizar_poder_clique()  
@@ -1221,12 +1243,11 @@ with col2:
     with st.container(height=350):
         for i, item in enumerate(melhorias_passivas):
             texto = f"+{item['qtd']:,}/s | {item['custo']:,} Pts"
-            desativado = st.session_state.pontos < item['custo'] or loja_em_cooldown
+            desativado = st.session_state.pontos < item['custo']
             key_btn = f"p_{st.session_state.mundo_atual}_{i}"
 
             if st.button(texto, key=key_btn, disabled=desativado, use_container_width=True):
                 if st.session_state.pontos >= item['custo']:
-                    st.session_state.ultima_compra = time.time()
                     st.session_state.pontos -= item['custo']
                     st.session_state.pontos_por_segundo += item['qtd']
                     salvar_progresso_atual()
@@ -1238,7 +1259,7 @@ if st.session_state.nome_usuario:
 # --- LOG DE ATUALIZAÇÕES ---
 st.markdown("---")
 st.subheader("Atualizações:")
-st.write("(3.5.0) - Adicionada a função de Banimento e Desbanimento instantâneo!")
+st.write("(3.6.0) - Removido delay dos ovos, corrigido Totem de Ouro e evento de sorte ajustado apenas para pets raros!")
 
 # --- 🏆 TABELA DE CLASSIFICAÇÃO GLOBAL ---
 st.markdown("---")
